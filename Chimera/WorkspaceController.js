@@ -1,33 +1,6 @@
-import {TerminalTab} from "./tabs/terminal-tab.js";
-import {SurfaceTab} from "./tabs/surface-tab.js";
-import {DebugTab} from "./tabs/debug-tab.js";
-
-function normalizeRequestPath(value, fallback = "/") {
-	const text = String(value ?? "").trim();
-
-	if (!text) {
-		return fallback;
-	}
-
-	if (text.startsWith("http://") || text.startsWith("https://")) {
-		try {
-			const url = new URL(text);
-			return `${url.pathname || "/"}${url.search}`;
-		} catch {
-			return fallback;
-		}
-	}
-
-	if (text.startsWith("/")) {
-		return text;
-	}
-
-	if (text.includes(" ")) {
-		return fallback;
-	}
-
-	return `/${text}`;
-}
+import {TerminalTab} from "./tabs/TerminalTab.js";
+import {SurfacePane} from "./tabs/SurfacePane.js";
+import {SurfaceTab} from "./tabs/SurfaceTab.js";
 
 export class WorkspaceController {
 	constructor(windowApi, elements) {
@@ -38,13 +11,15 @@ export class WorkspaceController {
 		this.tabOrder = [];
 		this.terminalTabsBySession = new Map();
 		this.surfaceTabsBySession = new Map();
+		this.surfacePanesById = new Map();
 		this.activeTabId = null;
 		this.draggedTabId = null;
-		this.debugTab = null;
-		this.debugSessionId = null;
+		this.isInterfaceFullScreen = false;
+		this.terminalOptions = {};
 	}
 
 	async initialize() {
+		this.terminalOptions = await this.windowApi.getTerminalOptions();
 		this.bindWindowEvents();
 		this.bindDomEvents();
 
@@ -56,21 +31,19 @@ export class WorkspaceController {
 		if (initialSessions.length === 0) {
 			await this.windowApi.start();
 		} else {
-			this.activateTab(`terminal:${initialSessions[0].id}`);
+			const initialSession = initialSessions[0];
+			if (initialSession?.showTerminalTab !== false) {
+				this.activateTab(`terminal:${initialSession.id}`);
+			}
 		}
 
 		this.updateEmptyState();
-		this.updateAddressBar();
 	}
 
 	bindWindowEvents() {
 		window.addEventListener("resize", () => {
 			const activeTab = this.tabs.get(this.activeTabId);
-			if (activeTab instanceof TerminalTab) {
-				activeTab.fit();
-			} else if (activeTab instanceof SurfaceTab) {
-				activeTab.syncBrowserView();
-			}
+			activeTab?.resizeToHost();
 		});
 
 		const notifyActiveTabHostViewChanged = (methodName) => {
@@ -96,6 +69,12 @@ export class WorkspaceController {
 				return;
 			}
 
+			if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "n") {
+				event.preventDefault();
+				void this.windowApi.newWindow();
+				return;
+			}
+
 			if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "t") {
 				event.preventDefault();
 				void this.windowApi.start();
@@ -115,7 +94,9 @@ export class WorkspaceController {
 
 		this.windowApi.onSessionCreated((session) => {
 			this.upsertSession(session);
-			this.activateTab(`terminal:${session.id}`);
+			if (session.showTerminalTab !== false) {
+				this.activateTab(`terminal:${session.id}`);
+			}
 		});
 
 		this.windowApi.onSessionUpdated((session) => {
@@ -136,65 +117,65 @@ export class WorkspaceController {
 				return;
 			}
 
-			const surfaceTab = this.findSurfaceTab(payload.surfaceId);
-			surfaceTab?.setDocumentSummary(payload);
-			void this.refreshDebugSnapshot();
+			const surfacePane = this.findSurfacePane(payload.surfaceId);
+			surfacePane?.setDocumentSummary(payload);
+			surfacePane?.tab.refreshButton();
 		});
 
 		this.windowApi.onSurfaceCreated((surface) => {
-			const surfaceTab = this.ensureSurfaceTab(surface);
-			this.activateTab(surfaceTab.id);
+			const surfacePane = this.ensureSurfacePane(surface);
+			this.activateTab(surfacePane.tab.id, {focusPrimary: true});
 		});
 
 		this.windowApi.onSurfaceUpdated((surface) => {
-			this.findSurfaceTab(surface.id)?.updateSurface(surface);
-			this.updateAddressBar();
+			const surfacePane = this.findSurfacePane(surface.id);
+			surfacePane?.updateSurface(surface);
+			surfacePane?.tab.refreshButton();
 		});
 
 		this.windowApi.onSurfaceRemoved(({surfaceId}) => {
-			const tab = this.findSurfaceTab(surfaceId);
-			if (!tab) {
+			const surfacePane = this.findSurfacePane(surfaceId);
+			if (!surfacePane) {
 				return;
 			}
 
-			this.unregisterSurfaceTab(tab.sessionId, surfaceId);
-			this.removeTab(tab.id);
-		});
-
-		this.windowApi.onResponse(({sessionId}) => {
-			if (this.debugSessionId === sessionId) {
-				void this.refreshDebugSnapshot();
-			}
-		});
-
-		this.windowApi.onPacket(({sessionId}) => {
-			if (this.debugSessionId === sessionId) {
-				void this.refreshDebugSnapshot();
+			this.unregisterSurfacePane(surfacePane.sessionId, surfaceId);
+			const tab = surfacePane.tab;
+			const wasActive = tab.activePane === surfacePane;
+			tab.removePane(surfacePane);
+			if (wasActive && this.activeTabId === tab.id) {
+				tab.focusPrimary({immediate: true});
 			}
 		});
 
 		this.windowApi.onState(({sessionId}) => {
 			this.refreshSessionTabs(sessionId);
-			if (this.debugSessionId === sessionId) {
-				void this.refreshDebugSnapshot();
-			}
 		});
 
 		this.windowApi.onExit(({sessionId, exitCode, signal}) => {
 			const terminalTab = this.tabs.get(this.terminalTabsBySession.get(sessionId));
 			terminalTab?.writeExit(exitCode, signal);
 			this.refreshSessionTabs(sessionId);
-			if (this.debugSessionId === sessionId) {
-				void this.refreshDebugSnapshot();
+		});
+
+		this.windowApi.onCloseActiveTab(() => {
+			if (this.activeTabId) {
+				this.closeTab(this.activeTabId);
 			}
 		});
-
-		this.windowApi.onShowDebugTab(() => {
-			this.showDebugTab();
+		
+		this.windowApi.onInterfaceFullScreen(({enabled}) => {
+			this.setInterfaceFullScreen(Boolean(enabled));
 		});
-
-		this.windowApi.onFocusAddressBar(() => {
-			this.focusAddressBar();
+	}
+	
+	setInterfaceFullScreen(enabled) {
+		this.isInterfaceFullScreen = enabled;
+		document.body.classList.toggle("interface-full-screen", enabled);
+		
+		requestAnimationFrame(() => {
+			const activeTab = this.tabs.get(this.activeTabId);
+			activeTab?.resizeToHost();
 		});
 	}
 
@@ -213,11 +194,7 @@ export class WorkspaceController {
 			return false;
 		}
 
-		if (activeTab instanceof TerminalTab) {
-			return !target || !target.closest(".xterm");
-		}
-
-		return Boolean(this.getCurrentSessionId());
+		return activeTab.shouldInterceptInterrupt(target);
 	}
 
 	sendInterruptToActiveSession() {
@@ -226,75 +203,53 @@ export class WorkspaceController {
 			return;
 		}
 
-		this.sendTerminalInput(sessionId, "\u0003");
+		void this.windowApi.interruptSession(sessionId);
 	}
 
-	bindDomEvents() {
-		const {
-			addressForm,
-			addressInput,
-		} = this.elements;
+	setSessionTransportMode(sessionId, mode) {
+		if (!sessionId) {
+			return;
+		}
 
-		addressForm.addEventListener("submit", async (event) => {
-			event.preventDefault();
-			await this.openAddress(addressInput.value);
-		});
+		void this.windowApi.setSessionTransportMode(sessionId, mode);
 	}
+
+	bindDomEvents() {}
 
 	getSession(sessionId) {
 		return sessionId ? this.sessions.get(sessionId) : null;
-	}
-
-	setDebugSession(sessionId) {
-		this.debugSessionId = sessionId;
-		this.updateAddressBar();
-	}
-
-	async refreshDebugSnapshot() {
-		if (!this.debugTab) {
-			return;
-		}
-
-		this.refreshDebugSessions();
-
-		if (!this.debugSessionId || !this.sessions.has(this.debugSessionId)) {
-			this.debugTab.renderDebugState(null);
-			return;
-		}
-
-		const debugState = await this.windowApi.getSessionDebugState(this.debugSessionId);
-		this.debugTab.renderDebugState(debugState);
-		this.updateAddressBar();
-	}
-
-	refreshDebugSessions() {
-		if (!this.debugTab) {
-			return;
-		}
-
-		const sessionOptions = Array.from(this.sessions.values());
-
-		if (!this.debugSessionId || !this.sessions.has(this.debugSessionId)) {
-			this.debugSessionId = this.getCurrentSessionId() || sessionOptions[0]?.id || null;
-		}
-
-		this.debugTab.setSessions(sessionOptions, this.debugSessionId);
 	}
 
 	upsertSession(session) {
 		this.sessions.set(session.id, session);
 
 		let terminalTab = this.tabs.get(this.terminalTabsBySession.get(session.id));
-		if (!terminalTab) {
+		if (session.showTerminalTab !== false && !terminalTab) {
 			terminalTab = new TerminalTab(this, session);
 			this.addTab(terminalTab, {activate: false});
 			this.terminalTabsBySession.set(session.id, terminalTab.id);
 		}
 
-		terminalTab.updateSession(session);
+		terminalTab?.updateSession(session);
 		this.refreshSessionTabs(session.id);
-		this.refreshDebugSessions();
-		this.updateAddressBar();
+		this.ensureHiddenSessionSurface(session);
+	}
+
+	ensureHiddenSessionSurface(session) {
+		if (!session || session.showTerminalTab !== false) {
+			return;
+		}
+
+		if (session.state?.status !== "attached" || session.state?.phase !== "ready" || session.transportMode !== "htty" || session.exitInfo) {
+			return;
+		}
+
+		const surfaceTabs = this.surfaceTabsBySession.get(session.id);
+		if (surfaceTabs?.size) {
+			return;
+		}
+
+		void this.windowApi.attachBrowser(session.id, session.lastSurfacePath || "/");
 	}
 
 	removeSession(sessionId) {
@@ -313,14 +268,13 @@ export class WorkspaceController {
 			}
 			this.surfaceTabsBySession.delete(sessionId);
 		}
-
-		if (this.debugSessionId === sessionId) {
-			this.debugSessionId = this.getCurrentSessionId() || Array.from(this.sessions.keys())[0] || null;
+		
+		for (const [surfaceId, entry] of Array.from(this.surfacePanesById.entries())) {
+			if (entry.pane.sessionId === sessionId) {
+				this.surfacePanesById.delete(surfaceId);
+			}
 		}
 
-		this.refreshDebugSessions();
-		void this.refreshDebugSnapshot();
-		this.updateAddressBar();
 	}
 
 	refreshSessionTabs(sessionId) {
@@ -332,6 +286,13 @@ export class WorkspaceController {
 		if (surfaceTabs) {
 			for (const tabId of surfaceTabs.values()) {
 				this.tabs.get(tabId)?.updateSession(session);
+			}
+		}
+		
+		for (const {pane} of this.surfacePanesById.values()) {
+			if (pane.sessionId === sessionId) {
+				pane.updateSession(session);
+				pane.tab.refreshButton();
 			}
 		}
 	}
@@ -364,12 +325,11 @@ export class WorkspaceController {
 			this.activeTabId = null;
 			const nextTabId = this.tabOrder[0] ?? null;
 			if (nextTabId) {
-				this.activateTab(nextTabId);
+				this.activateTab(nextTabId, {focusPrimary: true});
 			}
 		}
 
 		this.updateEmptyState();
-		this.updateAddressBar();
 	}
 
 	closeTab(tabId) {
@@ -378,19 +338,11 @@ export class WorkspaceController {
 			return;
 		}
 
-		if (tab instanceof TerminalTab) {
-			void this.windowApi.closeSession(tab.sessionId);
-			return;
-		}
-
-		if (tab instanceof SurfaceTab) {
-			void this.windowApi.closeSurface(tab.surfaceId);
-			return;
-		}
-
-		if (tab instanceof DebugTab) {
-			this.debugTab = null;
-			this.removeTab(tab.id);
+		const request = tab.closeRequest();
+		if (request?.kind === "surface") {
+			void this.windowApi.closeSurface(request.surfaceId);
+		} else if (request?.kind === "session") {
+			void this.windowApi.closeSession(request.sessionId);
 		}
 	}
 
@@ -406,18 +358,10 @@ export class WorkspaceController {
 			this.tabs.get(id)?.setActive(id === tabId, id === tabId ? options : undefined);
 		}
 
-		if (nextTab instanceof DebugTab) {
-			this.refreshDebugSessions();
-			void this.refreshDebugSnapshot();
-			if (this.debugSessionId) {
-				void this.windowApi.setActiveSession(this.debugSessionId);
-			}
-		} else if (nextTab.sessionId) {
-			this.debugSessionId = nextTab.sessionId;
+		if (nextTab.sessionId) {
 			void this.windowApi.setActiveSession(nextTab.sessionId);
 		}
 
-		this.updateAddressBar();
 		this.updateEmptyState();
 	}
 
@@ -465,6 +409,19 @@ export class WorkspaceController {
 	beginTabDrag(tabId) {
 		this.draggedTabId = tabId;
 	}
+	
+	isDragOutsideWindow(event) {
+		if (!event || typeof event.screenX !== "number" || typeof event.screenY !== "number") {
+			return false;
+		}
+		
+		const left = window.screenX;
+		const top = window.screenY;
+		const right = left + window.outerWidth;
+		const bottom = top + window.outerHeight;
+		
+		return event.screenX < left || event.screenX > right || event.screenY < top || event.screenY > bottom;
+	}
 
 	previewTabDrop(targetTabId, clientX) {
 		const targetTab = this.tabs.get(targetTabId);
@@ -509,8 +466,22 @@ export class WorkspaceController {
 		this.endTabDrag();
 	}
 
-	endTabDrag() {
+	endTabDrag(event) {
+		const tabId = this.draggedTabId;
 		this.draggedTabId = null;
+		
+		if (!tabId || !this.isDragOutsideWindow(event)) {
+			return;
+		}
+		
+		const tab = this.tabs.get(tabId);
+		if (tab?.sessionId) {
+			void this.windowApi.moveSessionToNewWindow(tab.sessionId, {
+				windowOptions: {
+					fullscreen: false,
+				},
+			});
+		}
 	}
 
 	syncTabButtons() {
@@ -522,19 +493,6 @@ export class WorkspaceController {
 		}
 	}
 
-	showDebugTab() {
-		if (!this.debugTab) {
-			this.debugTab = new DebugTab(this);
-			this.addTab(this.debugTab, {activate: false});
-		}
-
-		if (!this.debugSessionId) {
-			this.debugSessionId = this.getCurrentSessionId() || Array.from(this.sessions.keys())[0] || null;
-		}
-
-		this.activateTab(this.debugTab.id);
-	}
-
 	findSurfaceTab(surfaceId) {
 		for (const sessionTabs of this.surfaceTabsBySession.values()) {
 			const tabId = sessionTabs.get(surfaceId);
@@ -544,6 +502,39 @@ export class WorkspaceController {
 		}
 
 		return null;
+	}
+	
+	findSurfacePane(surfaceId) {
+		return this.surfacePanesById.get(surfaceId)?.pane ?? null;
+	}
+	
+	ensureSurfacePane(surface) {
+		const existing = this.surfacePanesById.get(surface.id);
+		if (existing) {
+			return existing.pane;
+		}
+		
+		const tab = this.tabs.get(this.terminalTabsBySession.get(surface.sessionId));
+		if (!tab) {
+			return this.ensureSurfaceTab(surface).surfacePane;
+		}
+		
+		const session = this.getSession(surface.sessionId) ?? {
+			id: surface.sessionId,
+			title: surface.title ?? "HTTY",
+			state: {status: "idle"},
+			exitInfo: null,
+			commandLine: surface.title ?? "HTTY",
+			lastSurfacePath: surface.requestPath,
+		};
+		const pane = new SurfacePane(tab, session, surface);
+		tab.pushPane(pane, {activate: tab.id === this.activeTabId});
+		this.surfacePanesById.set(surface.id, {tabId: tab.id, pane});
+		return pane;
+	}
+	
+	unregisterSurfacePane(_sessionId, surfaceId) {
+		this.surfacePanesById.delete(surfaceId);
 	}
 
 	ensureSurfaceTab(surface) {
@@ -558,7 +549,14 @@ export class WorkspaceController {
 			return this.tabs.get(existingId);
 		}
 
-		const session = this.getSession(surface.sessionId);
+		const session = this.getSession(surface.sessionId) ?? {
+			id: surface.sessionId,
+			title: surface.title ?? "HTTY",
+			state: {status: "idle"},
+			exitInfo: null,
+			commandLine: surface.title ?? "HTTY",
+			lastSurfacePath: surface.requestPath,
+		};
 		const tab = new SurfaceTab(this, session, surface);
 		this.addTab(tab, {activate: false});
 		sessionTabs.set(surface.id, tab.id);
@@ -583,64 +581,11 @@ export class WorkspaceController {
 			return null;
 		}
 
-		if (activeTab instanceof DebugTab) {
-			return this.debugSessionId;
-		}
-
 		return activeTab.sessionId;
 	}
 
 	updateEmptyState() {
 		this.elements.emptyState.hidden = this.tabOrder.length > 0;
-	}
-
-	updateAddressBar() {
-		const activeTab = this.tabs.get(this.activeTabId);
-		const {
-			addressInput,
-			addressSubmitButton,
-		} = this.elements;
-		const isEditingAddress = document.activeElement === addressInput;
-
-		if (!activeTab) {
-			if (!isEditingAddress) {
-				addressInput.value = "";
-			}
-			addressInput.placeholder = "Open a shell or surface tab";
-			addressInput.setAttribute("aria-label", "No active tab");
-			addressSubmitButton.disabled = true;
-			addressSubmitButton.textContent = "Go";
-			return;
-		}
-
-		const addressState = activeTab.getAddressState();
-		if (!isEditingAddress) {
-			addressInput.value = addressState.value;
-		}
-		addressInput.placeholder = activeTab instanceof SurfaceTab ? "Enter a request path" : "Enter a /path to open a surface tab";
-		addressInput.setAttribute("aria-label", `${addressState.kind}: ${addressState.detail}`);
-		addressSubmitButton.textContent = addressState.submitLabel;
-		addressSubmitButton.disabled = !this.getCurrentSessionId();
-	}
-
-	focusAddressBar() {
-		this.elements.addressInput.focus();
-		this.elements.addressInput.select();
-	}
-
-	async openAddress(rawValue) {
-		const sessionId = this.getCurrentSessionId();
-		if (!sessionId) {
-			return;
-		}
-
-		const activeTab = this.tabs.get(this.activeTabId);
-		const fallback = activeTab instanceof SurfaceTab ? activeTab.requestPath : this.getSession(sessionId)?.lastSurfacePath || "/";
-		const requestPath = normalizeRequestPath(rawValue, fallback);
-
-		const surface = await this.windowApi.attachBrowser(sessionId, requestPath);
-		const surfaceTab = this.ensureSurfaceTab(surface);
-		this.activateTab(surfaceTab.id);
 	}
 
 	sendTerminalInput(sessionId, data) {

@@ -4,20 +4,32 @@ contextBridge.exposeInMainWorld("chimera", {
 	getSessions() {
 		return ipcRenderer.invoke("chimera:get-sessions");
 	},
-	getSessionDebugState(sessionId) {
-		return ipcRenderer.invoke("chimera:get-session-debug-state", sessionId);
+	getTerminalOptions() {
+		return ipcRenderer.invoke("chimera:get-terminal-options");
 	},
 	setActiveSession(sessionId) {
 		return ipcRenderer.invoke("chimera:set-active-session", sessionId);
 	},
+	setSessionTitle(sessionId, title) {
+		return ipcRenderer.invoke("chimera:set-session-title", sessionId, title);
+	},
+	setSessionTransportMode(sessionId, mode) {
+		return ipcRenderer.invoke("chimera:set-session-transport-mode", sessionId, mode);
+	},
+	interruptSession(sessionId) {
+		return ipcRenderer.invoke("chimera:interrupt-session", sessionId);
+	},
+	newWindow() {
+		return ipcRenderer.invoke("chimera:new-window");
+	},
+	moveSessionToNewWindow(sessionId, options) {
+		return ipcRenderer.invoke("chimera:move-session-to-new-window", sessionId, options);
+	},
+	toggleInterfaceFullScreen() {
+		return ipcRenderer.invoke("chimera:toggle-interface-full-screen");
+	},
 	start(options) {
 		return ipcRenderer.invoke("chimera:start", options);
-	},
-	launchHelloWorld() {
-		return ipcRenderer.invoke("chimera:launch-hello-world");
-	},
-	launchBrowserDemo() {
-		return ipcRenderer.invoke("chimera:launch-browser-demo");
 	},
 	attachBrowser(sessionId, requestPath = "/") {
 		return ipcRenderer.invoke("chimera:attach-browser", sessionId, requestPath);
@@ -27,9 +39,6 @@ contextBridge.exposeInMainWorld("chimera", {
 	},
 	syncSurfaceView(surfaceId, state) {
 		ipcRenderer.send("chimera:surface-view-state", {surfaceId, state});
-	},
-	getSurfaceDebugState(surfaceId) {
-		return ipcRenderer.invoke("chimera:get-surface-debug-state", surfaceId);
 	},
 	evaluateSurface(surfaceId, script) {
 		return ipcRenderer.invoke("chimera:evaluate-surface", surfaceId, script);
@@ -61,9 +70,6 @@ contextBridge.exposeInMainWorld("chimera", {
 	onTerminalData(callback) {
 		ipcRenderer.on("session:terminal-data", (_event, payload) => callback(payload));
 	},
-	onPacket(callback) {
-		ipcRenderer.on("session:packet", (_event, payload) => callback(payload));
-	},
 	onState(callback) {
 		ipcRenderer.on("session:state", (_event, payload) => callback(payload));
 	},
@@ -79,16 +85,13 @@ contextBridge.exposeInMainWorld("chimera", {
 	onSurfaceRemoved(callback) {
 		ipcRenderer.on("surface:removed", (_event, payload) => callback(payload));
 	},
-	onResponse(callback) {
-		ipcRenderer.on("session:response", (_event, payload) => callback(payload));
-	},
 	onExit(callback) {
 		ipcRenderer.on("session:exit", (_event, payload) => callback(payload));
 	},
-	onShowDebugTab(callback) {
-		ipcRenderer.on("chimera:show-debug-tab", () => callback());
+	onCloseActiveTab(callback) {
+		ipcRenderer.on("chimera:close-active-tab", () => callback());
 	},
-	onFocusAddressBar(callback) {
-		ipcRenderer.on("chimera:focus-address-bar", () => callback());
+	onInterfaceFullScreen(callback) {
+		ipcRenderer.on("chimera:interface-full-screen", (_event, payload) => callback(payload));
 	},
 });

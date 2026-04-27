@@ -1,21 +1,16 @@
 export class Tab {
 	constructor(controller, {id, type, title, sessionId = null, closable = true}) {
-		if (new.target === Tab) {
-			throw new TypeError("Tab is abstract and must be subclassed.");
-		}
-
 		this.controller = controller;
 		this.id = id;
 		this.type = type;
 		this.title = title;
 		this.sessionId = sessionId;
 		this.closable = closable;
+		this.panes = [];
 		this.button = this.createButton();
 		this.panel = this.createPanel();
 		this.panel.hidden = true;
 		this.activationTicket = 0;
-		this.isVisible = false;
-		this.isPrimaryFocused = false;
 		this.installPanelInteractionHandlers();
 	}
 
@@ -58,9 +53,9 @@ export class Tab {
 			this.controller.beginTabDrag(this.id);
 		});
 
-		button.addEventListener("dragend", () => {
+		button.addEventListener("dragend", (event) => {
 			button.classList.remove("tab-button-dragging");
-			this.controller.endTabDrag();
+			this.controller.endTabDrag(event);
 		});
 
 		button.addEventListener("dragover", (event) => {
@@ -84,7 +79,12 @@ export class Tab {
 	}
 
 	createPanel() {
-		throw new TypeError("Subclasses must implement createPanel().");
+		const panel = document.createElement("section");
+		panel.className = "view-panel tab-panel";
+		this.stackNode = document.createElement("div");
+		this.stackNode.className = "tab-pane-stack";
+		panel.appendChild(this.stackNode);
+		return panel;
 	}
 
 	installPanelInteractionHandlers() {
@@ -94,10 +94,70 @@ export class Tab {
 				return;
 			}
 
-			this.focusPrimary({immediate: true});
+			this.activePane?.focusPrimary({immediate: true});
 		});
 	}
 
+	get activePane() {
+		return this.panes.at(-1) ?? null;
+	}
+
+	pushPane(pane, {activate = true} = {}) {
+		this.panes.push(pane);
+		this.stackNode.appendChild(pane.node);
+		
+		if (activate && !this.panel.hidden) {
+			this.activatePane(pane, {focusPrimary: true});
+		} else {
+			pane.setActive(false);
+		}
+		
+		this.refreshButton();
+		return pane;
+	}
+	
+	popPane() {
+		if (this.panes.length <= 1) {
+			return null;
+		}
+		
+		const pane = this.panes.pop();
+		pane.setActive(false);
+		pane.dispose();
+		
+		if (!this.panel.hidden) {
+			this.activatePane(this.activePane, {focusPrimary: true});
+		}
+		
+		this.refreshButton();
+		return pane;
+	}
+	
+	removePane(pane) {
+		const index = this.panes.indexOf(pane);
+		if (index === -1) {
+			return false;
+		}
+		
+		const wasActive = pane === this.activePane;
+		this.panes.splice(index, 1);
+		pane.setActive(false);
+		pane.dispose();
+		
+		if (wasActive && !this.panel.hidden && this.activePane) {
+			this.activatePane(this.activePane, {focusPrimary: true});
+		}
+		
+		this.refreshButton();
+		return true;
+	}
+	
+	activatePane(pane, options = {}) {
+		for (const candidate of this.panes) {
+			candidate.setActive(candidate === pane, candidate === pane ? options : undefined);
+		}
+	}
+	
 	refreshButton() {
 		this.labelNode.textContent = this.getLabel();
 		this.button.title = this.getTooltip();
@@ -105,15 +165,15 @@ export class Tab {
 	}
 
 	getLabel() {
-		return this.title;
+		return this.activePane?.getLabel() ?? this.title;
 	}
 
 	getTooltip() {
-		return this.title;
+		return this.activePane?.getTooltip() ?? this.title;
 	}
 
 	getAddressState() {
-		return {
+		return this.activePane?.getAddressState() ?? {
 			kind: "Info",
 			value: "",
 			detail: this.title,
@@ -135,93 +195,64 @@ export class Tab {
 
 		if (isActive) {
 			const activationTicket = ++this.activationTicket;
-			if (!this.isVisible) {
-				this.isVisible = true;
-				this.onShown(options);
-			}
-
-			this.prepareForActivation(options);
-			if (options.focusPrimary) {
-				this.focusPrimary(options);
-			}
+			this.activatePane(this.activePane, options);
 
 			requestAnimationFrame(() => {
 				if (this.activationTicket !== activationTicket || this.panel.hidden || !this.panel.isConnected) {
 					return;
 				}
 
-				this.afterActivation(options);
+				this.activePane?.afterActivation(options);
 			});
 		} else {
 			this.activationTicket += 1;
-			if (this.isPrimaryFocused) {
-				this.isPrimaryFocused = false;
-				this.onBlurred();
-			}
-
-			if (this.isVisible) {
-				this.isVisible = false;
-				this.onHidden();
-			}
-
-			this.onDeactivated();
+			this.activatePane(null, options);
 		}
 	}
 
 	focusPrimary(options = {}) {
-		this.focusPrimaryControl(options);
-
-		if (!this.isPrimaryFocused) {
-			this.isPrimaryFocused = true;
-			this.onFocused(options);
-		}
-	}
-
-	prepareForActivation() {
-		// Subclasses can override.
-	}
-
-	afterActivation() {
-		// Subclasses can override.
-	}
-
-	onShown() {
-		// Subclasses can override.
-	}
-
-	onHidden() {
-		// Subclasses can override.
-	}
-
-	focusPrimaryControl() {
-		// Subclasses can override.
-	}
-
-	onFocused() {
-		// Subclasses can override.
-	}
-
-	onBlurred() {
-		// Subclasses can override.
+		this.activePane?.focusPrimary(options);
 	}
 
 	onHostVisibilityChanged() {
-		// Subclasses can override.
+		this.activePane?.onHostVisibilityChanged();
 	}
 
 	onHostFocusChanged() {
-		// Subclasses can override.
-	}
-
-	onDeactivated() {
-		// Subclasses can override.
+		this.activePane?.onHostFocusChanged();
 	}
 
 	updateSession(_session) {
+		for (const pane of this.panes) {
+			pane.updateSession(_session);
+		}
 		this.refreshButton();
+	}
+	
+	writeData(data) {
+		this.activePane?.writeData(data);
+	}
+	
+	writeExit(exitCode, signal) {
+		this.activePane?.writeExit(exitCode, signal);
+	}
+	
+	resizeToHost() {
+		this.activePane?.resizeToHost();
+	}
+	
+	shouldInterceptInterrupt(target) {
+		return this.activePane?.shouldInterceptInterrupt(target) ?? false;
+	}
+	
+	closeRequest() {
+		return this.activePane?.closeRequest() ?? {kind: "session", sessionId: this.sessionId};
 	}
 
 	dispose() {
+		for (const pane of this.panes.splice(0)) {
+			pane.dispose();
+		}
 		this.button.remove();
 		this.panel.remove();
 	}
