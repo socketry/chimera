@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-txCl+xW7WIiL/eCoPz3L1+Pc7guzdKBSTMJYRHCvVBw='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'">
+		<title>Chimera</title>
+		<link rel="stylesheet" href="../node_modules/@xterm/xterm/css/xterm.css">
+		<link rel="stylesheet" href="./terminal.css">
+	</head>
+	<body>
+		<div class="app-shell">
+			<form id="address-form" class="address-shell">
+				<div class="address-bar">
+					<input id="address-input" class="address-input" type="text" spellcheck="false" autocomplete="off" placeholder="/">
+					<button id="address-submit" class="action-button action-button-secondary address-submit" type="submit">Go</button>
+				</div>
+			</form>
+
+			<section class="tab-strip-shell">
+				<div id="tab-strip" class="tab-strip" role="tablist" aria-label="Chimera tabs"></div>
+			</section>
+
+			<main id="view-stack" class="view-stack">
+				<section id="empty-state" class="empty-state">
+					<h2>No tabs open.</h2>
+					<p>Open a shell tab, then use the address bar to open a surface path.</p>
+				</section>
+			</main>
+		</div>
+
+		<script type="module" src="./renderer.js"></script>
+	</body>
+</html>
