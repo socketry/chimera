@@ -7,6 +7,8 @@
 	"main": "Chimera/main.js",
 	"scripts": {
 		"start": "electron .",
+		"dist": "electron-builder",
+		"release": "electron-builder --publish always",
 		"postinstall": "node scripts/fix-node-pty-permissions.cjs",
 		"test": "node --test",
 		"test:e2e": "node --test test/Chimera.js"
@@ -19,7 +21,45 @@
 		"node-pty": "^1.1.0"
 	},
 	"devDependencies": {
+		"electron-builder": "^26.0.12",
 		"playwright": "^1.59.1"
+	},
+	"build": {
+		"appId": "com.socketry.chimera",
+		"productName": "Chimera",
+		"directories": {
+			"output": "release"
+		},
+		"files": [
+			"Chimera/**/*",
+			"Chimera.js",
+			"package.json"
+		],
+		"mac": {
+			"category": "public.app-category.developer-tools",
+			"target": [
+				"dmg",
+				"zip"
+			]
+		},
+		"win": {
+			"target": [
+				"nsis",
+				"zip"
+			]
+		},
+		"linux": {
+			"category": "Utility",
+			"target": [
+				"AppImage",
+				"tar.gz"
+			]
+		},
+		"publish": [
+			{
+				"provider": "github"
+			}
+		]
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": [
