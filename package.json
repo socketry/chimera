@@ -18,7 +18,7 @@
 		"@socketry/htty": "^0.2.2",
 		"@xterm/addon-fit": "^0.11.0",
 		"@xterm/xterm": "^6.0.0",
-		"node-pty": "^1.1.0"
+		"node-pty": "1.2.0-beta.12"
 	},
 	"devDependencies": {
 		"electron": "^41.4.0",
@@ -38,14 +38,14 @@
 		],
 		"mac": {
 			"category": "public.app-category.developer-tools",
-			"icon": "build/application.icon",
+			"icon": "icon.icns",
 			"target": [
 				"dmg",
 				"zip"
 			]
 		},
 		"win": {
-			"icon": "build/icon.ico",
+			"icon": "icon.ico",
 			"target": [
 				"nsis",
 				"zip"
@@ -53,7 +53,7 @@
 		},
 		"linux": {
 			"category": "Utility",
-			"icon": "build/icons",
+			"icon": "icons",
 			"target": [
 				"AppImage",
 				"tar.gz"
@@ -69,6 +69,10 @@
 		"onlyBuiltDependencies": [
 			"electron",
 			"node-pty"
+		],
+		"minimumReleaseAgeExclude": [
+			"electron",
+			"@socketry/htty"
 		]
 	}
 }
