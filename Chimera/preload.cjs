@@ -91,6 +91,9 @@ contextBridge.exposeInMainWorld("chimera", {
 	onCloseActiveTab(callback) {
 		ipcRenderer.on("chimera:close-active-tab", () => callback());
 	},
+	onActivateRelativeTab(callback) {
+		ipcRenderer.on("chimera:activate-relative-tab", (_event, payload) => callback(payload));
+	},
 	onInterfaceFullScreen(callback) {
 		ipcRenderer.on("chimera:interface-full-screen", (_event, payload) => callback(payload));
 	},

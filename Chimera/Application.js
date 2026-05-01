@@ -139,6 +139,20 @@ export class ChimeraApplication {
 							this.focusedWindowController()?.closeActiveTab();
 						},
 					},
+					{
+						label: "Previous Tab",
+						accelerator: "CmdOrCtrl+Shift+Left",
+						click: () => {
+							this.focusedWindowController()?.activateRelativeTab(-1);
+						},
+					},
+					{
+						label: "Next Tab",
+						accelerator: "CmdOrCtrl+Shift+Right",
+						click: () => {
+							this.focusedWindowController()?.activateRelativeTab(1);
+						},
+					},
 				],
 			},
 			{role: "editMenu"},

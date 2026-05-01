@@ -81,6 +81,18 @@ export class WorkspaceController {
 				return;
 			}
 
+			if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === "ArrowRight") {
+				event.preventDefault();
+				this.activateRelativeTab(1);
+				return;
+			}
+
+			if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === "ArrowLeft") {
+				event.preventDefault();
+				this.activateRelativeTab(-1);
+				return;
+			}
+
 			if ((event.ctrlKey || event.metaKey) && event.key === "PageDown") {
 				event.preventDefault();
 				this.activateRelativeTab(1);
@@ -162,6 +174,15 @@ export class WorkspaceController {
 			if (this.activeTabId) {
 				this.closeTab(this.activeTabId);
 			}
+		});
+
+		this.windowApi.onActivateRelativeTab(({offset}) => {
+			const delta = Number(offset);
+			if (!Number.isFinite(delta) || delta === 0) {
+				return;
+			}
+
+			this.activateRelativeTab(delta < 0 ? -1 : 1);
 		});
 		
 		this.windowApi.onInterfaceFullScreen(({enabled}) => {

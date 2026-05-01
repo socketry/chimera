@@ -12,7 +12,7 @@
 		"test:e2e": "node --test test/Chimera.js"
 	},
 	"dependencies": {
-		"@socketry/htty": "^0.2.1",
+		"@socketry/htty": "^0.2.2",
 		"@xterm/addon-fit": "^0.11.0",
 		"@xterm/xterm": "^6.0.0",
 		"electron": "^41.4.0",

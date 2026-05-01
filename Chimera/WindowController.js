@@ -446,6 +446,14 @@ export class WindowController {
 	closeActiveTab() {
 		this.emitToRenderer("chimera:close-active-tab", {});
 	}
+
+	activateRelativeTab(offset) {
+		if (!Number.isFinite(offset) || offset === 0) {
+			return;
+		}
+
+		this.emitToRenderer("chimera:activate-relative-tab", {offset});
+	}
 	
 	toggleInterfaceFullScreen(force) {
 		this.isInterfaceFullScreen = typeof force === "boolean" ? force : !this.isInterfaceFullScreen;
