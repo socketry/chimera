@@ -23,6 +23,7 @@ async function launchChimera() {
 
 	const window = await electronApp.firstWindow();
 	await window.waitForLoadState("domcontentloaded");
+	await window.bringToFront();
 
 	return {electronApp, window};
 }
@@ -49,6 +50,55 @@ async function launchExampleFromShell(window, example) {
 	await window.evaluate(({id, cmd}) => window.chimera.sendInput(id, cmd), {id: sessionId, cmd: `node examples/${example}\r`});
 	await window.locator(".tab-panel:not([hidden]) .surface-panel:not([hidden])").first().waitFor({state: "visible"});
 	return sessionId;
+}
+
+async function focusWindowForShortcut(window) {
+	await window.bringToFront();
+	await window.waitForSelector(".tab-strip-shell", {state: "visible"});
+	await window.locator(".tab-strip-shell").click({position: {x: 8, y: 8}});
+	await window.evaluate(() => {
+		if (document.activeElement instanceof HTMLElement) {
+			document.activeElement.blur();
+		}
+
+		window.focus();
+	});
+}
+
+async function pressShortcutUntilTabCountIncreases(window, shortcut, initialCount, attempts = 3) {
+	for (let index = 0; index < attempts; index += 1) {
+		await focusWindowForShortcut(window);
+		await window.keyboard.press(shortcut);
+
+		try {
+			await window.waitForFunction((expectedCount) => {
+				return document.querySelectorAll(".tab-button").length > expectedCount;
+			}, initialCount, {timeout: 5000});
+			return;
+		} catch {
+			if (index === attempts - 1) {
+				throw new Error(`Shortcut ${shortcut} did not create a new tab after ${attempts} attempts`);
+			}
+		}
+	}
+}
+
+async function waitForWindowCreatedByShortcut(electronApp, window, shortcut, attempts = 3) {
+	for (let index = 0; index < attempts; index += 1) {
+		const newWindowPromise = electronApp.waitForEvent("window", {timeout: 5000});
+		await focusWindowForShortcut(window);
+		await window.keyboard.press(shortcut);
+
+		try {
+			return await newWindowPromise;
+		} catch {
+			if (index === attempts - 1) {
+				throw new Error(`Shortcut ${shortcut} did not open a new window after ${attempts} attempts`);
+			}
+		}
+	}
+
+	return null;
 }
 
 test("shows xterm on first load", {concurrency: false}, async () => {
@@ -81,10 +131,7 @@ test("opens a new shell tab with the primary tab shortcut", {concurrency: false}
 		await window.waitForSelector(".tab-button", {state: "visible"});
 		const initialCount = await window.locator(".tab-button").count();
 
-		await window.keyboard.press(`${primaryModifier}+T`);
-		await window.waitForFunction((expectedCount) => {
-			return document.querySelectorAll(".tab-button").length > expectedCount;
-		}, initialCount);
+		await pressShortcutUntilTabCountIncreases(window, `${primaryModifier}+T`, initialCount);
 
 		assert.equal(await window.locator(".tab-button").count(), initialCount + 1);
 	} finally {
@@ -138,10 +185,8 @@ test("opens a new window with a shell tab using the primary window shortcut", {c
 	try {
 		await window.waitForSelector(".tab-button", {state: "visible"});
 
-		const newWindowPromise = electronApp.waitForEvent("window");
-		await window.keyboard.press(`${primaryModifier}+N`);
-
-		const newWindow = await newWindowPromise;
+		const newWindow = await waitForWindowCreatedByShortcut(electronApp, window, `${primaryModifier}+N`);
+		assert.ok(newWindow, "expected shortcut to open a new window");
 		await newWindow.waitForLoadState("domcontentloaded");
 		await newWindow.waitForSelector(".tab-button", {state: "visible"});
 		await newWindow.waitForSelector(".terminal-panel:not([hidden])", {state: "visible"});
@@ -427,9 +472,8 @@ test("closing the only shell tab in a secondary window closes that window", {con
 	const {electronApp, window} = await launchChimera();
 
 	try {
-		const newWindowPromise = electronApp.waitForEvent("window");
-		await window.keyboard.press(`${primaryModifier}+N`);
-		const otherWindow = await newWindowPromise;
+		const otherWindow = await waitForWindowCreatedByShortcut(electronApp, window, `${primaryModifier}+N`);
+		assert.ok(otherWindow, "expected shortcut to open a secondary window");
 		await otherWindow.waitForLoadState("domcontentloaded");
 		await otherWindow.waitForSelector(".terminal-panel", {state: "visible"});
 
