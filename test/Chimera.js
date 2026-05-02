@@ -12,6 +12,14 @@ const configPath = path.join(__dirname, "config.json");
 const primaryModifier = process.platform === "darwin" ? "Meta" : "Control";
 const shellCommand = process.env.SHELL || "/bin/zsh";
 
+function shellQuote(value) {
+	return `'${String(value).replaceAll("'", "'\\''")}'`;
+}
+
+function exampleCommand(example) {
+	return `node ${shellQuote(path.join(projectRoot, "examples", example))}`;
+}
+
 async function launchChimera() {
 	const electronApp = await electron.launch({
 		args: [projectRoot],
@@ -47,7 +55,7 @@ async function shellSessionId(window) {
 async function launchExampleFromShell(window, example) {
 	const sessionId = await shellSessionId(window);
 	assert.ok(sessionId, "expected an initial shell session");
-	await window.evaluate(({id, cmd}) => window.chimera.sendInput(id, cmd), {id: sessionId, cmd: `node examples/${example}\r`});
+	await window.evaluate(({id, cmd}) => window.chimera.sendInput(id, cmd), {id: sessionId, cmd: `${exampleCommand(example)}\r`});
 	await window.locator(".tab-panel:not([hidden]) .surface-panel:not([hidden])").first().waitFor({state: "visible"});
 	return sessionId;
 }
@@ -348,7 +356,10 @@ test("hello world surface stacks on the active terminal tab without switching ta
 	try {
 		const sessionId = await shellSessionId(window);
 		const initialTabCount = await window.locator(".tab-button").count();
-		await window.evaluate((id) => window.chimera.sendInput(id, "node examples/hello-world.mjs\r"), sessionId);
+		await window.evaluate(({id, cmd}) => window.chimera.sendInput(id, `${cmd}\r`), {
+			id: sessionId,
+			cmd: exampleCommand("hello-world.mjs"),
+		});
 
 		await window.waitForFunction(async (id) => {
 			const sessions = await window.chimera.getSessions();
@@ -371,9 +382,12 @@ test("running hello world inside the shell upgrades the active PTY session into 
 		const firstSessionId = sessions[0]?.id;
 		assert.ok(firstSessionId, "expected an initial shell session");
 
-		await window.evaluate((sessionId) => {
-			return window.chimera.sendInput(sessionId, "node examples/hello-world.mjs\r");
-		}, firstSessionId);
+		await window.evaluate(({sessionId, cmd}) => {
+			return window.chimera.sendInput(sessionId, `${cmd}\r`);
+		}, {
+			sessionId: firstSessionId,
+			cmd: exampleCommand("hello-world.mjs"),
+		});
 
 		await window.waitForSelector(".tab-panel:not([hidden]) .surface-panel:not([hidden])", {state: "visible"});
 		assert.equal(await window.locator(".tab-button").count(), 1);
@@ -391,7 +405,10 @@ test("browser demo serves a surface via PTY-based HTTY transport", {concurrency:
 
 	try {
 		const sessionId = await shellSessionId(window);
-		await window.evaluate((id) => window.chimera.sendInput(id, "node examples/browser-demo.mjs\r"), sessionId);
+		await window.evaluate(({id, cmd}) => window.chimera.sendInput(id, `${cmd}\r`), {
+			id: sessionId,
+			cmd: exampleCommand("browser-demo.mjs"),
+		});
 
 		await window.waitForFunction(async (id) => {
 			const sessions = await window.chimera.getSessions();

@@ -9,6 +9,7 @@ import {
 	normalizeRequestPath,
 	sanitizeWindowTitle,
 } from "./Utilities.js";
+import {resolveSessionCwd} from "./SessionDefaults.js";
 import {SurfaceController} from "./SurfaceController.js";
 
 export class SessionController {
@@ -18,7 +19,7 @@ export class SessionController {
 		this.id = options.id;
 		this.command = options.command;
 		this.args = [...options.args];
-		this.cwd = options.cwd || process.cwd();
+		this.cwd = resolveSessionCwd(options.cwd);
 		this.usePty = options.usePty !== false;
 		this.showTerminalTab = options.showTerminalTab !== false;
 		this.defaultTitle = inferTitle(this.command, this.args);
