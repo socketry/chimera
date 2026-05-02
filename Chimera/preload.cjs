@@ -25,8 +25,8 @@ contextBridge.exposeInMainWorld("chimera", {
 	moveSessionToNewWindow(sessionId, options) {
 		return ipcRenderer.invoke("chimera:move-session-to-new-window", sessionId, options);
 	},
-	toggleInterfaceFullScreen() {
-		return ipcRenderer.invoke("chimera:toggle-interface-full-screen");
+	toggleTabBar() {
+		return ipcRenderer.invoke("chimera:toggle-tab-bar");
 	},
 	start(options) {
 		return ipcRenderer.invoke("chimera:start", options);
@@ -94,7 +94,7 @@ contextBridge.exposeInMainWorld("chimera", {
 	onActivateRelativeTab(callback) {
 		ipcRenderer.on("chimera:activate-relative-tab", (_event, payload) => callback(payload));
 	},
-	onInterfaceFullScreen(callback) {
-		ipcRenderer.on("chimera:interface-full-screen", (_event, payload) => callback(payload));
+	onTabBarHidden(callback) {
+		ipcRenderer.on("chimera:tab-bar-hidden", (_event, payload) => callback(payload));
 	},
 });

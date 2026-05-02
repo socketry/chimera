@@ -139,19 +139,19 @@ test("opens a new shell tab with the primary tab shortcut", {concurrency: false}
 	}
 });
 
-test("interface full screen hides the tab bar", {concurrency: false}, async () => {
+test("toggle tab bar hides the tab bar", {concurrency: false}, async () => {
 	const {electronApp, window} = await launchChimera();
 	
 	try {
 		await window.waitForSelector(".tab-button", {state: "visible"});
 		assert.equal(await window.locator(".tab-strip-shell").isVisible(), true);
 		
-		const enabled = await window.evaluate(() => window.chimera.toggleInterfaceFullScreen());
+		const enabled = await window.evaluate(() => window.chimera.toggleTabBar());
 		assert.equal(enabled, true);
 		await window.waitForSelector(".tab-strip-shell", {state: "hidden"});
 		assert.equal(await window.locator(".terminal-panel:not([hidden]) .terminal-host").isVisible(), true);
 		
-		const disabled = await window.evaluate(() => window.chimera.toggleInterfaceFullScreen());
+		const disabled = await window.evaluate(() => window.chimera.toggleTabBar());
 		assert.equal(disabled, false);
 		await window.waitForSelector(".tab-strip-shell", {state: "visible"});
 	} finally {
@@ -159,7 +159,7 @@ test("interface full screen hides the tab bar", {concurrency: false}, async () =
 	}
 });
 
-test("interface full screen resizes active browser surfaces", {concurrency: false}, async () => {
+test("toggle tab bar resizes active browser surfaces", {concurrency: false}, async () => {
 	const {electronApp, window} = await launchChimera();
 	
 	try {
@@ -167,7 +167,7 @@ test("interface full screen resizes active browser surfaces", {concurrency: fals
 		const surfaceId = await waitForActiveSurfaceId(window);
 		const before = await window.evaluate((id) => window.chimera.evaluateSurface(id, "window.innerHeight"), surfaceId);
 		
-		const enabled = await window.evaluate(() => window.chimera.toggleInterfaceFullScreen());
+		const enabled = await window.evaluate(() => window.chimera.toggleTabBar());
 		assert.equal(enabled, true);
 		await window.waitForSelector(".tab-strip-shell", {state: "hidden"});
 		await window.waitForFunction(async (id, previousHeight) => {
@@ -500,4 +500,3 @@ test("closing the only shell tab in a secondary window closes that window", {con
 		await electronApp.close();
 	}
 });
-

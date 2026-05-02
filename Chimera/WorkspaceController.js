@@ -14,7 +14,7 @@ export class WorkspaceController {
 		this.surfacePanesById = new Map();
 		this.activeTabId = null;
 		this.draggedTabId = null;
-		this.isInterfaceFullScreen = false;
+		this.isTabBarHidden = false;
 		this.terminalOptions = {};
 	}
 
@@ -185,14 +185,14 @@ export class WorkspaceController {
 			this.activateRelativeTab(delta < 0 ? -1 : 1);
 		});
 		
-		this.windowApi.onInterfaceFullScreen(({enabled}) => {
-			this.setInterfaceFullScreen(Boolean(enabled));
+		this.windowApi.onTabBarHidden(({hidden}) => {
+			this.setTabBarHidden(Boolean(hidden));
 		});
 	}
 	
-	setInterfaceFullScreen(enabled) {
-		this.isInterfaceFullScreen = enabled;
-		document.body.classList.toggle("interface-full-screen", enabled);
+	setTabBarHidden(hidden) {
+		this.isTabBarHidden = hidden;
+		document.body.classList.toggle("tab-bar-hidden", hidden);
 		
 		requestAnimationFrame(() => {
 			const activeTab = this.tabs.get(this.activeTabId);

@@ -126,13 +126,6 @@ export class ChimeraApplication {
 						},
 					},
 					{
-						label: "Open Shell",
-						accelerator: "CmdOrCtrl+Shift+S",
-						click: () => {
-							this.focusedWindowController()?.createSession();
-						},
-					},
-					{
 						label: "Close Tab",
 						accelerator: "CmdOrCtrl+W",
 						click: () => {
@@ -159,17 +152,21 @@ export class ChimeraApplication {
 			{
 				label: "View",
 				submenu: [
-					{role: "toggleDevTools"},
-					{role: "togglefullscreen"},
 					{
-						label: "Toggle Interface Full Screen",
+						label: "Toggle Tab Bar",
 						accelerator: "CmdOrCtrl+Shift+F",
 						click: () => {
-							this.focusedWindowController()?.toggleInterfaceFullScreen();
+							this.focusedWindowController()?.toggleTabBar();
 						},
 					},
+					{type: "separator"},
+					{role: "resetZoom"},
+					{role: "zoomIn"},
+					{role: "zoomOut"},
+					{type: "separator"},
 					{role: "reload"},
 					{role: "forceReload"},
+					{role: "toggleDevTools"},
 				],
 			},
 			{role: "windowMenu"},
@@ -212,10 +209,10 @@ export class ChimeraApplication {
 			return this.moveSessionToNewWindow(this.controllerForSender(event.sender), sessionId, options);
 		});
 		
-		ipcMain.handle("chimera:toggle-interface-full-screen", (event) => {
+		ipcMain.handle("chimera:toggle-tab-bar", (event) => {
 			const controller = this.controllerForSender(event.sender);
-			controller?.toggleInterfaceFullScreen();
-			return controller?.isInterfaceFullScreen ?? false;
+			controller?.toggleTabBar();
+			return controller?.isTabBarHidden ?? false;
 		});
 
 		ipcMain.handle("chimera:start", (event, options = {}) => {

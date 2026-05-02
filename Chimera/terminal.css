@@ -103,11 +103,11 @@ body {
 	-webkit-app-region: drag;
 }
 
-body.interface-full-screen .app-shell {
+body.tab-bar-hidden .app-shell {
 	grid-template-rows: 1fr;
 }
 
-body.interface-full-screen .tab-strip-shell {
+body.tab-bar-hidden .tab-strip-shell {
 	display: none;
 }
 

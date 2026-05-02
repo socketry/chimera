@@ -15,7 +15,7 @@ export class WindowController {
 		this.surfaces = new Map();
 		this.activeSessionId = null;
 		this.activeSurfaceId = null;
-		this.isInterfaceFullScreen = false;
+		this.isTabBarHidden = false;
 	}
 
 	get id() {
@@ -455,9 +455,9 @@ export class WindowController {
 		this.emitToRenderer("chimera:activate-relative-tab", {offset});
 	}
 	
-	toggleInterfaceFullScreen(force) {
-		this.isInterfaceFullScreen = typeof force === "boolean" ? force : !this.isInterfaceFullScreen;
-		this.emitToRenderer("chimera:interface-full-screen", {enabled: this.isInterfaceFullScreen});
+	toggleTabBar(force) {
+		this.isTabBarHidden = typeof force === "boolean" ? force : !this.isTabBarHidden;
+		this.emitToRenderer("chimera:tab-bar-hidden", {hidden: this.isTabBarHidden});
 	}
 
 	sessionControllerDidEmitTerminalData(session, data) {
