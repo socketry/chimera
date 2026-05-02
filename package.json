@@ -62,7 +62,10 @@
 		},
 		"publish": [
 			{
-				"provider": "github"
+				"provider": "github",
+				"owner": "socketry",
+				"repo": "chimera",
+				"releaseType": "draft"
 			}
 		]
 	},

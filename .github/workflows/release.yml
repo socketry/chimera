@@ -56,3 +56,32 @@ jobs:
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+
+  publish:
+    name: Publish release
+    environment: Release
+    runs-on: ubuntu-latest
+    needs: release
+
+    steps:
+      - name: Verify release metadata
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          assets="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
+
+          for asset in latest-mac.yml latest.yml latest-linux.yml; do
+            if ! grep -Fxq "$asset" <<< "$assets"; then
+              echo "Missing update metadata asset: $asset" >&2
+              exit 1
+            fi
+          done
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest
