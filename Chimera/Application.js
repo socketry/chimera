@@ -263,12 +263,48 @@ export class ChimeraApplication {
 		});
 	}
 
+	async configureAutoUpdates() {
+		if (!app.isPackaged || process.env.CHIMERA_DISABLE_AUTO_UPDATE === "1") {
+			return;
+		}
+
+		const electronUpdater = await import("electron-updater");
+		const {autoUpdater} = electronUpdater.default ?? electronUpdater;
+
+		autoUpdater.logger = console;
+
+		autoUpdater.on("checking-for-update", () => {
+			this.logLifecycle("updater:checking");
+		});
+
+		autoUpdater.on("update-available", (info) => {
+			this.logLifecycle("updater:update-available", {version: info.version});
+		});
+
+		autoUpdater.on("update-not-available", (info) => {
+			this.logLifecycle("updater:update-not-available", {version: info.version});
+		});
+
+		autoUpdater.on("update-downloaded", (info) => {
+			this.logLifecycle("updater:update-downloaded", {version: info.version});
+		});
+
+		autoUpdater.on("error", (error) => {
+			this.logLifecycle("updater:error", {message: error.message});
+		});
+
+		await autoUpdater.checkForUpdatesAndNotify().catch((error) => {
+			this.logLifecycle("updater:check-failed", {message: error.message});
+		});
+	}
+
 	async start() {
 		this.registerPrivilegedSchemes();
 		await app.whenReady();
 		this.registerIpcHandlers();
 		await this.createWindow();
 		this.buildApplicationMenu();
+		void this.configureAutoUpdates();
 
 		app.on("activate", () => {
 			if (BrowserWindow.getAllWindows().length === 0) {
