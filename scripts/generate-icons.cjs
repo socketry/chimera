@@ -9,8 +9,10 @@ const {generateAssetCatalogForIcon} = require("app-builder-lib/out/util/macosIco
 const root = path.resolve(__dirname, "..");
 const buildDir = path.join(root, "build");
 const applicationIcon = path.join(buildDir, "application.icon");
-const applicationIconImage = path.join(applicationIcon, "Assets", "icon.png");
+const applicationIconManifest = path.join(applicationIcon, "icon.json");
+const flattenedIconImage = path.join(buildDir, "application.png");
 const linuxIconsDir = path.join(buildDir, "icons");
+const macIconPath = path.join(buildDir, "icon.icns");
 
 const sizes = [16, 32, 48, 128, 256, 512, 1024];
 
@@ -21,31 +23,38 @@ function run(command, args) {
 	});
 }
 
-async function main() {
-	if (!fs.existsSync(applicationIcon)) {
-		throw new Error(`Missing ${path.relative(root, applicationIcon)}`);
-	}
-
-	if (!fs.existsSync(applicationIconImage)) {
-		throw new Error(`Missing ${path.relative(root, applicationIconImage)}`);
-	}
-
-	fs.mkdirSync(buildDir, {recursive: true});
-	fs.mkdirSync(linuxIconsDir, {recursive: true});
-
+function writePngIconsFromFlattenedImage() {
 	for (const size of sizes) {
 		run("sips", [
 			"-z",
 			String(size),
 			String(size),
-			applicationIconImage,
+			flattenedIconImage,
 			"--out",
 			path.join(linuxIconsDir, `${size}.png`)
 		]);
 	}
+}
+
+async function main() {
+	if (!fs.existsSync(applicationIcon)) {
+		throw new Error(`Missing ${path.relative(root, applicationIcon)}`);
+	}
+
+	if (!fs.existsSync(applicationIconManifest)) {
+		throw new Error(`Missing ${path.relative(root, applicationIconManifest)}`);
+	}
+
+	if (!fs.existsSync(flattenedIconImage)) {
+		throw new Error(`Missing ${path.relative(root, flattenedIconImage)}`);
+	}
+
+	fs.mkdirSync(buildDir, {recursive: true});
+	fs.mkdirSync(linuxIconsDir, {recursive: true});
 
 	const {icnsFile} = await generateAssetCatalogForIcon(applicationIcon);
-	fs.writeFileSync(path.join(buildDir, "icon.icns"), icnsFile);
+	fs.writeFileSync(macIconPath, icnsFile);
+	writePngIconsFromFlattenedImage();
 
 	const outDir = path.join(buildDir, ".icon-ico");
 	fs.rmSync(outDir, {recursive: true, force: true});

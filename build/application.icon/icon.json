@@ -1,8 +1,8 @@
 {
   "fill" : {
     "linear-gradient" : [
-      "display-p3:0.75506,0.58251,1.00000,1.00000",
-      "display-p3:0.56397,0.28128,0.96783,1.00000"
+      "display-p3:0.00000,0.00000,0.00000,1.00000",
+      "display-p3:0.15984,0.15187,0.15786,1.00000"
     ],
     "orientation" : {
       "start" : {
@@ -19,16 +19,14 @@
     {
       "layers" : [
         {
-          "blend-mode" : "normal",
           "glass" : true,
-          "hidden" : false,
-          "image-name" : "icon.png",
-          "name" : "icon",
+          "image-name" : "Image 2.png",
+          "name" : "Image 2",
           "position" : {
             "scale" : 1,
             "translation-in-points" : [
-              55.26834983475828,
-              57
+              -81.26321045618715,
+              -278.85757281023507
             ]
           }
         }
