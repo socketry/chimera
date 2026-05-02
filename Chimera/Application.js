@@ -58,6 +58,12 @@ export class ChimeraApplication {
 		this.windowControllers.set(controller.id, controller);
 		return controller;
 	}
+
+	async showReleaseNotes() {
+		const controller = this.focusedWindowController() ?? Array.from(this.windowControllers.values())[0] ?? await this.createWindow();
+		controller.window?.focus();
+		controller.emitToRenderer("chimera:show-release-notes");
+	}
 	
 	async moveSessionToNewWindow(sourceController, sessionId, options = {}) {
 		const session = sourceController?.releaseSession(sessionId);
@@ -170,6 +176,17 @@ export class ChimeraApplication {
 				],
 			},
 			{role: "windowMenu"},
+			{
+				label: "Help",
+				submenu: [
+					{
+						label: "Release Notes",
+						click: () => {
+							void this.showReleaseNotes();
+						},
+					},
+				],
+			},
 		];
 
 		Menu.setApplicationMenu(Menu.buildFromTemplate(template));

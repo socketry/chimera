@@ -7,9 +7,13 @@
 	"description": "An Electron terminal emulator that can intercept HTTY side-channel chunks.",
 	"main": "Chimera/main.js",
 	"scripts": {
+		"prestart": "npm run build-release-notes",
 		"start": "electron .",
+		"predist": "npm run build-release-notes",
 		"dist": "electron-builder",
+		"prerelease": "npm run build-release-notes",
 		"release": "electron-builder --publish always",
+		"build-release-notes": "node scripts/build-release-notes.mjs",
 		"generate-icons": "node scripts/generate-icons.cjs",
 		"test": "node --test",
 		"test:e2e": "node --test test/Chimera.js"
@@ -24,6 +28,7 @@
 	"devDependencies": {
 		"electron": "^41.4.0",
 		"electron-builder": "^26.0.12",
+		"markdown-it": "^14.1.1",
 		"playwright": "^1.59.1"
 	},
 	"build": {

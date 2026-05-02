@@ -1,3 +1,4 @@
+import {DocumentTab} from "./tabs/DocumentTab.js";
 import {TerminalTab} from "./tabs/TerminalTab.js";
 import {SurfacePane} from "./tabs/SurfacePane.js";
 import {SurfaceTab} from "./tabs/SurfaceTab.js";
@@ -188,6 +189,26 @@ export class WorkspaceController {
 		this.windowApi.onTabBarHidden(({hidden}) => {
 			this.setTabBarHidden(Boolean(hidden));
 		});
+
+		this.windowApi.onShowReleaseNotes(() => {
+			void this.showReleaseNotes();
+		});
+	}
+
+	async showReleaseNotes() {
+		const tabId = "document:release-notes";
+		const existingTab = this.tabs.get(tabId);
+		if (existingTab) {
+			this.activateTab(tabId, {focusPrimary: true});
+			return;
+		}
+
+		const tab = new DocumentTab(this, {
+			id: tabId,
+			title: "Release Notes",
+			src: "./release-notes.html",
+		});
+		this.addTab(tab, {activate: true});
 	}
 	
 	setTabBarHidden(hidden) {
@@ -364,6 +385,8 @@ export class WorkspaceController {
 			void this.windowApi.closeSurface(request.surfaceId);
 		} else if (request?.kind === "session") {
 			void this.windowApi.closeSession(request.sessionId);
+		} else if (request?.kind === "tab") {
+			this.removeTab(request.tabId);
 		}
 	}
 
