@@ -1,10 +1,11 @@
-import {app, BrowserWindow, ipcMain, Menu, protocol} from "electron";
+import {app, BrowserWindow, dialog, ipcMain, Menu, protocol} from "electron";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 
 import {Configuration} from "./Configuration.js";
 import {DarwinWindowController} from "./DarwinWindowController.js";
 import {logLifecycle} from "./Utilities.js";
+import {UpdateController} from "./UpdateController.js";
 import {WindowController} from "./WindowController.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -18,6 +19,11 @@ export class ChimeraApplication {
 		this.configuration = new Configuration();
 		this.rendererPath = path.join(__dirname, "renderer.html");
 		this.preloadPath = path.join(__dirname, "preload.cjs");
+		this.updateController = new UpdateController({
+			app,
+			dialog,
+			logLifecycle: this.logLifecycle.bind(this),
+		});
 	}
 
 	logLifecycle(event, details = {}) {
@@ -180,6 +186,12 @@ export class ChimeraApplication {
 				label: "Help",
 				submenu: [
 					{
+						label: "Check for Updates",
+						click: () => {
+							void this.updateController.checkForUpdates({userInitiated: true});
+						},
+					},
+					{
 						label: "Release Notes",
 						click: () => {
 							void this.showReleaseNotes();
@@ -277,48 +289,13 @@ export class ChimeraApplication {
 		});
 	}
 
-	async configureAutoUpdates() {
-		if (!app.isPackaged || process.env.CHIMERA_DISABLE_AUTO_UPDATE === "1") {
-			return;
-		}
-
-		const electronUpdater = await import("electron-updater");
-		const {autoUpdater} = electronUpdater.default ?? electronUpdater;
-
-		autoUpdater.logger = console;
-
-		autoUpdater.on("checking-for-update", () => {
-			this.logLifecycle("updater:checking");
-		});
-
-		autoUpdater.on("update-available", (info) => {
-			this.logLifecycle("updater:update-available", {version: info.version});
-		});
-
-		autoUpdater.on("update-not-available", (info) => {
-			this.logLifecycle("updater:update-not-available", {version: info.version});
-		});
-
-		autoUpdater.on("update-downloaded", (info) => {
-			this.logLifecycle("updater:update-downloaded", {version: info.version});
-		});
-
-		autoUpdater.on("error", (error) => {
-			this.logLifecycle("updater:error", {message: error.message});
-		});
-
-		await autoUpdater.checkForUpdatesAndNotify().catch((error) => {
-			this.logLifecycle("updater:check-failed", {message: error.message});
-		});
-	}
-
 	async start() {
 		this.registerPrivilegedSchemes();
 		await app.whenReady();
 		this.registerIpcHandlers();
 		await this.createWindow();
 		this.buildApplicationMenu();
-		void this.configureAutoUpdates();
+		void this.updateController.start();
 
 		app.on("activate", () => {
 			if (BrowserWindow.getAllWindows().length === 0) {

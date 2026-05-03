@@ -3,6 +3,7 @@
 ## Unreleased
 
   - Add release notes.
+  - Make auto-update check and install explicit.
 
 ## v0.2.1
 
