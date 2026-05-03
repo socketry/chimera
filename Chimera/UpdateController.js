@@ -1,3 +1,9 @@
+import path from "node:path";
+import {fileURLToPath} from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 export class UpdateController {
 	constructor({
 		app,
@@ -35,6 +41,7 @@ export class UpdateController {
 		this.downloaded = false;
 		this.downloading = null;
 		this.recheckTimer = null;
+		this.updateWindowPath = path.join(__dirname, "assets", "update.html");
 	}
 
 	setOptions(options = {}) {
@@ -328,40 +335,9 @@ export class UpdateController {
 			}
 		});
 
-		const version = info.version ? `Version ${this.escapeHtml(info.version)} is available.` : "An update is available.";
-		await window.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(`<!DOCTYPE html>
-<html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>Chimera Update</title>
-		<style>
-			:root { color-scheme: light dark; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-			body { margin: 0; padding: 24px; }
-			h1 { margin: 0 0 8px; font-size: 20px; font-weight: 650; }
-			p { margin: 0 0 18px; color: color-mix(in srgb, CanvasText 72%, transparent); font-size: 13px; }
-			progress { width: 100%; height: 14px; }
-			progress[hidden] { display: none; }
-			.status { margin-top: 10px; min-height: 18px; font-size: 12px; color: color-mix(in srgb, CanvasText 65%, transparent); }
-			.actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 22px; }
-			a { border: 0; border-radius: 6px; padding: 8px 14px; background: AccentColor; color: AccentColorText; font-size: 13px; text-decoration: none; }
-			a.secondary { background: color-mix(in srgb, CanvasText 10%, transparent); color: CanvasText; }
-			a[hidden] { display: none; }
-			a[aria-disabled="true"] { pointer-events: none; opacity: 0.48; filter: grayscale(1); }
-		</style>
-	</head>
-	<body>
-		<h1>Update Available</h1>
-		<p id="description">${version}</p>
-		<progress id="progress" max="100" value="0" hidden></progress>
-		<div id="status" class="status">Download the update now?</div>
-		<div class="actions">
-			<a id="later" class="secondary" href="chimera-update://later">Later</a>
-			<a id="download" href="chimera-update://download">Download Update</a>
-			<a id="restart" aria-disabled="true" hidden>Restart Now</a>
-		</div>
-	</body>
-</html>`)}`);
+		await window.loadFile?.(this.updateWindowPath, {
+			query: info.version ? {version: String(info.version)} : {},
+		});
 		window.show?.();
 
 		return window;
@@ -381,14 +357,7 @@ export class UpdateController {
 			return;
 		}
 
-		await window.webContents?.executeJavaScript?.(`
-			document.querySelector("h1").textContent = "Downloading Update";
-			document.getElementById("description").textContent = "Chimera is downloading the update.";
-			document.getElementById("progress").hidden = false;
-			document.getElementById("status").textContent = "Preparing download...";
-			document.getElementById("later").hidden = true;
-			document.getElementById("download").hidden = true;
-		`);
+		await window.webContents?.executeJavaScript?.("window.chimeraUpdate.showDownloadProgress()");
 	}
 
 	async updateDownloadProgress(progress = {}) {
@@ -402,10 +371,7 @@ export class UpdateController {
 		const total = this.formatBytes(progress.total);
 		const status = total ? `${Math.round(percent)}% (${transferred} of ${total})` : `${Math.round(percent)}%`;
 
-		await window.webContents?.executeJavaScript?.(`
-			document.getElementById("progress").value = ${JSON.stringify(percent)};
-			document.getElementById("status").textContent = ${JSON.stringify(status)};
-		`);
+		await window.webContents?.executeJavaScript?.(`window.chimeraUpdate.updateDownloadProgress(${JSON.stringify(percent)}, ${JSON.stringify(status)})`);
 	}
 
 	async handleUpdateDownloaded() {
@@ -415,14 +381,7 @@ export class UpdateController {
 			return;
 		}
 
-		await window.webContents?.executeJavaScript?.(`
-			document.querySelector("h1").textContent = "Update Ready";
-			document.getElementById("status").textContent = "Restart Chimera to finish installing the update.";
-			const restart = document.getElementById("restart");
-			restart.href = "chimera-update://restart";
-			restart.hidden = false;
-			restart.setAttribute("aria-disabled", "false");
-		`);
+		await window.webContents?.executeJavaScript?.("window.chimeraUpdate.showUpdateReady()");
 		window.show?.();
 	}
 
@@ -432,14 +391,7 @@ export class UpdateController {
 			return;
 		}
 
-		await window.webContents?.executeJavaScript?.(`
-			document.querySelector("h1").textContent = "Update Failed";
-			document.getElementById("description").textContent = "Chimera could not download the update.";
-			document.getElementById("progress").hidden = true;
-			document.getElementById("status").textContent = ${JSON.stringify(error.message)};
-			document.getElementById("later").hidden = false;
-			document.getElementById("download").hidden = false;
-		`);
+		await window.webContents?.executeJavaScript?.(`window.chimeraUpdate.showUpdateError(${JSON.stringify(error.message)})`);
 	}
 
 	async restartNow() {
@@ -470,13 +422,5 @@ export class UpdateController {
 		}
 
 		return `${amount >= 10 || unit === "B" ? Math.round(amount) : amount.toFixed(1)} ${unit}`;
-	}
-
-	escapeHtml(value) {
-		return String(value)
-			.replaceAll("&", "&amp;")
-			.replaceAll("<", "&lt;")
-			.replaceAll(">", "&gt;")
-			.replaceAll('"', "&quot;");
 	}
 }

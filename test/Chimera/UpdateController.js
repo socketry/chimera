@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import {EventEmitter} from "node:events";
+import path from "node:path";
 import test from "node:test";
 
 import {UpdateController} from "../../Chimera/UpdateController.js";
@@ -50,6 +51,7 @@ class FakeBrowserWindow extends EventEmitter {
 		super();
 		this.options = options;
 		this.urls = [];
+		this.files = [];
 		this.closed = false;
 		this.shown = false;
 		this.webContents = new FakeWebContents();
@@ -58,6 +60,10 @@ class FakeBrowserWindow extends EventEmitter {
 
 	async loadURL(url) {
 		this.urls.push(url);
+	}
+	
+	async loadFile(filePath, options = {}) {
+		this.files.push({path: filePath, options});
 	}
 
 	isDestroyed() {
@@ -130,8 +136,8 @@ test("shows an update window before downloading an available update", async () =
 	assert.equal(updater.downloads, 0);
 	assert.equal(updater.installs, 0);
 	assert.equal(FakeBrowserWindow.instances.length, 1);
-	assert.match(decodeURIComponent(FakeBrowserWindow.instances[0].urls[0]), /Update Available/);
-	assert.match(decodeURIComponent(FakeBrowserWindow.instances[0].urls[0]), /Download Update/);
+	assert.equal(path.basename(FakeBrowserWindow.instances[0].files[0].path), "update.html");
+	assert.deepEqual(FakeBrowserWindow.instances[0].files[0].options, {query: {version: "0.2.2"}});
 });
 
 test("downloads when the update window download action is selected", async () => {
@@ -146,7 +152,7 @@ test("downloads when the update window download action is selected", async () =>
 	assert.equal(event.prevented, true);
 	assert.equal(updater.downloads, 1);
 	assert.equal(updater.installs, 0);
-	assert.match(FakeBrowserWindow.instances[0].webContents.scripts.join("\n"), /Restart Chimera/);
+	assert.match(FakeBrowserWindow.instances[0].webContents.scripts.join("\n"), /showUpdateReady/);
 });
 
 test("does not download when the update window is dismissed", async () => {
