@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>Release Notes</title>
+		<title>Bookmarks</title>
 		<style>
 			:root {
 				color-scheme: light dark;
@@ -48,8 +48,7 @@
 			}
 
 			h1,
-			h2,
-			h3 {
+			h2 {
 				margin: 0;
 				line-height: 1.2;
 				font-weight: 680;
@@ -57,7 +56,7 @@
 
 			h1 {
 				font-size: 28px;
-				margin-bottom: 28px;
+				margin-bottom: 20px;
 			}
 
 			h2 {
@@ -65,12 +64,6 @@
 				margin-top: 28px;
 				margin-bottom: 10px;
 				color: var(--accent);
-			}
-
-			h3 {
-				font-size: 16px;
-				margin-top: 22px;
-				margin-bottom: 8px;
 			}
 
 			p,
@@ -87,10 +80,6 @@
 				margin: 4px 0;
 			}
 
-			a {
-				color: var(--accent);
-			}
-
 			pre {
 				overflow: auto;
 				padding: 12px;
@@ -104,6 +93,10 @@
 				font-size: 13px;
 			}
 
+			.muted {
+				color: var(--muted);
+			}
+
 			@media (max-width: 760px) {
 				main {
 					width: calc(100% - 32px);
@@ -114,18 +107,30 @@
 	</head>
 	<body>
 		<main>
-			<h1>Releases</h1>
-			<h2>v0.2.2</h2>
+			<h1>Bookmarks</h1>
+			<p>Bookmarks are executable scripts stored in a <code>bookmarks</code> directory next to your Chimera configuration file. Each script appears in the Bookmarks menu using its file name.</p>
+
+			<h2>Location</h2>
+			<p>If your configuration file is <code>~/.local/state/chimera.json</code>, bookmarks are loaded from:</p>
+			<pre><code>~/.local/state/bookmarks/</code></pre>
+
+			<h2>Example</h2>
+			<p>Create an executable file such as <code>my-server</code>:</p>
+			<pre><code>#!/usr/bin/env sh
+exec ssh my-server</code></pre>
+
+			<p>Then make it executable:</p>
+			<pre><code>chmod +x ~/.local/state/bookmarks/my-server</code></pre>
+
+			<h2>Menu Behavior</h2>
 			<ul>
-			<li>Add release notes.</li>
-			<li>Make auto-update check and install explicit.</li>
+				<li>Hidden files and directories are ignored.</li>
+				<li>Bookmarks are sorted by file name.</li>
+				<li>The menu title is the file name without its final extension.</li>
+				<li>Use Bookmarks > Refresh after adding, removing, or renaming scripts.</li>
 			</ul>
-			<h2>v0.2.1</h2>
-			<ul>
-			<li>Default to user home directory for new shells.</li>
-			<li>Add bundled release notes viewer.</li>
-			<li>Generate release notes HTML from markdown during packaging.</li>
-			</ul>
+
+			<p class="muted">Bookmarks run as terminal sessions, so scripts can launch SSH, local commands, or small project workflows.</p>
 		</main>
 	</body>
 </html>

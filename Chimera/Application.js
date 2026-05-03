@@ -2,6 +2,7 @@ import {app, BrowserWindow, dialog, ipcMain, Menu, protocol} from "electron";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 
+import {BookmarksController} from "./BookmarksController.js";
 import {Configuration} from "./Configuration.js";
 import {DarwinWindowController} from "./DarwinWindowController.js";
 import {logLifecycle} from "./Utilities.js";
@@ -17,6 +18,10 @@ export class ChimeraApplication {
 		this.sessionCounter = 0;
 		this.surfaceCounter = 0;
 		this.configuration = new Configuration();
+		this.bookmarksController = new BookmarksController({
+			configuration: this.configuration,
+			logLifecycle: this.logLifecycle.bind(this),
+		});
 		this.rendererPath = path.join(__dirname, "renderer.html");
 		this.preloadPath = path.join(__dirname, "preload.cjs");
 		this.updateController = new UpdateController({
@@ -65,10 +70,25 @@ export class ChimeraApplication {
 		return controller;
 	}
 
-	async showReleaseNotes() {
+	async showReleases() {
 		const controller = this.focusedWindowController() ?? Array.from(this.windowControllers.values())[0] ?? await this.createWindow();
 		controller.window?.focus();
-		controller.emitToRenderer("chimera:show-release-notes");
+		controller.emitToRenderer("chimera:show-releases");
+	}
+
+	async showBookmarksHelp() {
+		const controller = this.focusedWindowController() ?? Array.from(this.windowControllers.values())[0] ?? await this.createWindow();
+		controller.window?.focus();
+		controller.emitToRenderer("chimera:show-bookmarks-help");
+	}
+
+	async openBookmark(bookmark) {
+		const controller = this.focusedWindowController() ?? Array.from(this.windowControllers.values())[0] ?? await this.createWindow();
+		controller.window?.focus();
+		controller.createSession(bookmark.path, [], {
+			cwd: bookmark.cwd,
+			title: bookmark.title,
+		});
 	}
 	
 	async moveSessionToNewWindow(sourceController, sessionId, options = {}) {
@@ -118,6 +138,7 @@ export class ChimeraApplication {
 	}
 
 	buildApplicationMenu() {
+		const bookmarks = this.bookmarksController.bookmarks();
 		const template = [
 			...(process.platform === "darwin" ? [{role: "appMenu"}] : []),
 			{
@@ -160,6 +181,35 @@ export class ChimeraApplication {
 					},
 				],
 			},
+			{
+				label: "Bookmarks",
+				submenu: [
+					...(bookmarks.length > 0 ? bookmarks.map((bookmark) => ({
+						label: bookmark.title,
+						click: () => {
+							void this.openBookmark(bookmark);
+						},
+					})) : [
+						{
+							label: "No Bookmarks",
+							enabled: false,
+						},
+					]),
+					{type: "separator"},
+					{
+						label: "Help",
+						click: () => {
+							void this.showBookmarksHelp();
+						},
+					},
+					{
+						label: "Refresh",
+						click: () => {
+							this.buildApplicationMenu();
+						},
+					},
+				],
+			},
 			{role: "editMenu"},
 			{
 				label: "View",
@@ -192,9 +242,15 @@ export class ChimeraApplication {
 						},
 					},
 					{
-						label: "Release Notes",
+						label: "Releases",
 						click: () => {
-							void this.showReleaseNotes();
+							void this.showReleases();
+						},
+					},
+					{
+						label: "Bookmarks",
+						click: () => {
+							void this.showBookmarksHelp();
 						},
 					},
 				],

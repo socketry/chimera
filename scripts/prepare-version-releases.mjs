@@ -5,7 +5,7 @@ import {fileURLToPath} from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, "..");
-const releaseNotesPath = path.join(projectRoot, "releases.md");
+const releasesPath = path.join(projectRoot, "releases.md");
 const packagePath = path.join(projectRoot, "package.json");
 
 export function releaseHeading(version) {
@@ -18,7 +18,7 @@ export function releaseHeading(version) {
 	return `## v${normalizedVersion}`;
 }
 
-export function prepareReleaseNotes(markdown, version) {
+export function prepareReleases(markdown, version) {
 	const heading = releaseHeading(version);
 
 	if (/^##[ \t]+Unreleased[ \t]*$/m.test(markdown)) {
@@ -43,6 +43,6 @@ async function packageVersion() {
 
 if (process.argv[1] === __filename) {
 	const version = await packageVersion();
-	const markdown = await fs.readFile(releaseNotesPath, "utf8");
-	await fs.writeFile(releaseNotesPath, prepareReleaseNotes(markdown, version));
+	const markdown = await fs.readFile(releasesPath, "utf8");
+	await fs.writeFile(releasesPath, prepareReleases(markdown, version));
 }

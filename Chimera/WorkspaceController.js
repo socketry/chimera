@@ -190,13 +190,17 @@ export class WorkspaceController {
 			this.setTabBarHidden(Boolean(hidden));
 		});
 
-		this.windowApi.onShowReleaseNotes(() => {
-			void this.showReleaseNotes();
+		this.windowApi.onShowReleases(() => {
+			void this.showReleases();
+		});
+
+		this.windowApi.onShowBookmarksHelp(() => {
+			void this.showBookmarksHelp();
 		});
 	}
 
-	async showReleaseNotes() {
-		const tabId = "document:release-notes";
+	async showReleases() {
+		const tabId = "document:releases";
 		const existingTab = this.tabs.get(tabId);
 		if (existingTab) {
 			this.activateTab(tabId, {focusPrimary: true});
@@ -205,8 +209,24 @@ export class WorkspaceController {
 
 		const tab = new DocumentTab(this, {
 			id: tabId,
-			title: "Release Notes",
-			src: "./release-notes.html",
+			title: "Releases",
+			src: "../help/releases.html",
+		});
+		this.addTab(tab, {activate: true});
+	}
+
+	async showBookmarksHelp() {
+		const tabId = "document:bookmarks";
+		const existingTab = this.tabs.get(tabId);
+		if (existingTab) {
+			this.activateTab(tabId, {focusPrimary: true});
+			return;
+		}
+
+		const tab = new DocumentTab(this, {
+			id: tabId,
+			title: "Bookmarks",
+			src: "../help/bookmarks.html",
 		});
 		this.addTab(tab, {activate: true});
 	}

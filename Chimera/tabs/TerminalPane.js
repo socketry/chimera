@@ -1,4 +1,5 @@
 import {FitAddon} from "../../node_modules/@xterm/addon-fit/lib/addon-fit.mjs";
+import {WebglAddon} from "../../node_modules/@xterm/addon-webgl/lib/addon-webgl.mjs";
 import {Terminal} from "../../node_modules/@xterm/xterm/lib/xterm.mjs";
 
 import {Pane} from "./Pane.js";
@@ -123,6 +124,9 @@ export class TerminalPane extends Pane {
 		this.sessionModeNode = panel.querySelector(".terminal-session-mode");
 		this.sessionModeDetailNode = panel.querySelector(".terminal-session-mode-detail");
 		this.isOpen = false;
+		this.webglRendererAttempted = false;
+		this.webglAddon = null;
+		this.webglContextLossDisposable = null;
 		this.terminal = new Terminal({
 			allowTransparency: true,
 			cursorBlink: true,
@@ -187,6 +191,34 @@ export class TerminalPane extends Pane {
 		
 		this.terminal.open(this.contentNode);
 		this.isOpen = true;
+		this.installWebglRenderer();
+	}
+
+	installWebglRenderer() {
+		if (this.webglRendererAttempted || this.webglAddon) {
+			return;
+		}
+
+		this.webglRendererAttempted = true;
+
+		try {
+			const webglAddon = new WebglAddon();
+			this.webglContextLossDisposable = webglAddon.onContextLoss?.(() => {
+				this.webglContextLossDisposable?.dispose?.();
+				this.webglContextLossDisposable = null;
+				this.webglAddon = null;
+				webglAddon.dispose();
+			}) ?? null;
+
+			this.terminal.loadAddon(webglAddon);
+			this.webglAddon = webglAddon;
+		} catch (error) {
+			console.warn("Unable to enable xterm WebGL renderer:", error);
+			this.webglContextLossDisposable?.dispose?.();
+			this.webglContextLossDisposable = null;
+			this.webglAddon?.dispose?.();
+			this.webglAddon = null;
+		}
 	}
 	
 	getLabel() {
@@ -310,6 +342,10 @@ export class TerminalPane extends Pane {
 		this.themeMediaQuery?.removeEventListener?.("change", this.themeChangeHandler);
 		this.bootstrapDisposable?.dispose?.();
 		this.bootstrapDisposable = null;
+		this.webglContextLossDisposable?.dispose?.();
+		this.webglContextLossDisposable = null;
+		this.webglAddon?.dispose?.();
+		this.webglAddon = null;
 		
 		try {
 			this.terminal.dispose();

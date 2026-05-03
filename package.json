@@ -7,14 +7,14 @@
 	"description": "An Electron terminal emulator that can intercept HTTY side-channel chunks.",
 	"main": "Chimera/main.js",
 	"scripts": {
-		"prestart": "npm run build-release-notes",
+		"prestart": "npm run build-releases",
 		"start": "electron .",
-		"predist": "npm run build-release-notes",
+		"predist": "npm run build-releases",
 		"dist": "electron-builder",
-		"prerelease": "npm run build-release-notes",
+		"prerelease": "npm run build-releases",
 		"release": "electron-builder --publish always",
-		"version": "node scripts/prepare-version-release-notes.mjs && npm run build-release-notes && git add releases.md Chimera/release-notes.html",
-		"build-release-notes": "node scripts/build-release-notes.mjs",
+		"version": "node scripts/prepare-version-releases.mjs && npm run build-releases && git add releases.md help/releases.html",
+		"build-releases": "node scripts/build-releases.mjs",
 		"generate-icons": "node scripts/generate-icons.cjs",
 		"test": "node --test",
 		"test:e2e": "node --test test/Chimera/Application.js"
@@ -22,6 +22,7 @@
 	"dependencies": {
 		"@socketry/htty": "^0.2.2",
 		"@xterm/addon-fit": "^0.11.0",
+		"@xterm/addon-webgl": "^0.19.0",
 		"@xterm/xterm": "^6.0.0",
 		"electron-updater": "^6.8.3",
 		"node-pty": "1.2.0-beta.12"
@@ -40,6 +41,7 @@
 		},
 		"files": [
 			"Chimera/**/*",
+			"help/**/*",
 			"Chimera.js",
 			"package.json"
 		],

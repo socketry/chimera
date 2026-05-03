@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, "..");
 const sourcePath = path.join(projectRoot, "releases.md");
-const outputPath = path.join(projectRoot, "Chimera", "release-notes.html");
+const outputPath = path.join(projectRoot, "help", "releases.html");
 
 const markdownRenderer = new MarkdownIt({
 	html: false,
@@ -15,14 +15,14 @@ const markdownRenderer = new MarkdownIt({
 	typographer: false,
 });
 
-export function renderReleaseNotesHtml(markdown) {
+export function renderReleasesHtml(markdown) {
 	const body = markdownRenderer.render(String(markdown ?? "")).trim();
 	return `<!DOCTYPE html>
 <html lang="en">
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>Release Notes</title>
+		<title>Releases</title>
 		<style>
 			:root {
 				color-scheme: light dark;
@@ -147,5 +147,5 @@ function indentHtml(html, tabCount) {
 
 if (process.argv[1] === __filename) {
 	const markdown = await fs.readFile(sourcePath, "utf8");
-	await fs.writeFile(outputPath, renderReleaseNotesHtml(markdown));
+	await fs.writeFile(outputPath, renderReleasesHtml(markdown));
 }

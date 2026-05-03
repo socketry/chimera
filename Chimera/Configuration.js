@@ -91,6 +91,10 @@ export class Configuration {
 		return mergeObjects(this.configuration.terminal ?? {}, this.profileConfiguration().terminal ?? {});
 	}
 
+	configurationDirectory() {
+		return path.dirname(this.configPath);
+	}
+
 	themeConfiguration() {
 		return mergeObjects(this.configuration.theme ?? {}, this.profileConfiguration().theme ?? {});
 	}
@@ -101,7 +105,7 @@ export class Configuration {
 		
 		return path.isAbsolute(stylesheet)
 			? stylesheet
-			: path.resolve(path.dirname(this.configPath), stylesheet);
+			: path.resolve(this.configurationDirectory(), stylesheet);
 	}
 
 	themeStylesheet() {
@@ -109,5 +113,9 @@ export class Configuration {
 		if (!stylesheetPath) return null;
 		
 		return fs.readFileSync(stylesheetPath, "utf8");
+	}
+
+	bookmarksDirectory() {
+		return path.join(this.configurationDirectory(), "bookmarks");
 	}
 }
