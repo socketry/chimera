@@ -2,14 +2,14 @@ export class UpdateController {
 	constructor({
 		app,
 		dialog,
-		logLifecycle,
+		trace,
 		updaterLoader = () => import("electron-updater"),
 		environment = process.env,
 		logger = console,
 	} = {}) {
 		this.app = app;
 		this.dialog = dialog;
-		this.logLifecycle = logLifecycle ?? (() => {});
+		this.trace = trace ?? (() => {});
 		this.updaterLoader = updaterLoader;
 		this.environment = environment;
 		this.logger = logger;
@@ -27,7 +27,7 @@ export class UpdateController {
 
 	async start() {
 		await this.checkForUpdates().catch((error) => {
-			this.logLifecycle("updater:check-failed", {message: error.message});
+			this.trace("updater:check-failed", {message: error.message});
 		});
 	}
 
@@ -54,21 +54,21 @@ export class UpdateController {
 
 		autoUpdater.on("checking-for-update", () => {
 			this.lastCheckFoundUpdate = false;
-			this.logLifecycle("updater:checking");
+			this.trace("updater:checking");
 		});
 
 		autoUpdater.on("update-available", (info) => {
 			this.lastCheckFoundUpdate = true;
-			this.logLifecycle("updater:update-available", {version: info.version});
+			this.trace("updater:update-available", {version: info.version});
 			void this.promptForUpdate(info);
 		});
 
 		autoUpdater.on("update-not-available", (info) => {
-			this.logLifecycle("updater:update-not-available", {version: info.version});
+			this.trace("updater:update-not-available", {version: info.version});
 		});
 
 		autoUpdater.on("update-downloaded", (info) => {
-			this.logLifecycle("updater:update-downloaded", {version: info.version});
+			this.trace("updater:update-downloaded", {version: info.version});
 
 			if (this.installWhenDownloaded) {
 				this.installWhenDownloaded = false;
@@ -77,7 +77,7 @@ export class UpdateController {
 		});
 
 		autoUpdater.on("error", (error) => {
-			this.logLifecycle("updater:error", {message: error.message});
+			this.trace("updater:error", {message: error.message});
 		});
 	}
 
@@ -121,7 +121,7 @@ export class UpdateController {
 
 			return result;
 		} catch (error) {
-			this.logLifecycle("updater:check-failed", {message: error.message});
+			this.trace("updater:check-failed", {message: error.message});
 
 			if (userInitiated) {
 				await this.showMessage({
@@ -170,7 +170,7 @@ export class UpdateController {
 			return true;
 		} catch (error) {
 			this.installWhenDownloaded = false;
-			this.logLifecycle("updater:download-failed", {message: error.message});
+			this.trace("updater:download-failed", {message: error.message});
 			await this.showMessage({
 				type: "error",
 				message: "Unable to download the update.",

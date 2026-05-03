@@ -48,8 +48,8 @@ export class SessionController {
 		return describeCommand(this.command, this.args);
 	}
 
-	logLifecycle(event, details = {}) {
-		this.application.logLifecycle(event, details);
+	trace(event, details = {}) {
+		this.application.trace(event, details);
 	}
 	
 	setDelegate(delegate) {
@@ -80,7 +80,7 @@ export class SessionController {
 	// ── Process lifecycle ──────────────────────────────────────────────────
 
 	start() {
-		this.logLifecycle("createSession:start", {
+		this.trace("createSession:start", {
 			sessionId: this.id,
 			command: this.command,
 			args: this.args,
@@ -104,7 +104,7 @@ export class SessionController {
 
 		this.#attachSessionListeners();
 
-		this.logLifecycle("createSession:done", {sessionId: this.id});
+		this.trace("createSession:done", {sessionId: this.id});
 	}
 
 	#createPtyProcess() {
@@ -212,7 +212,7 @@ export class SessionController {
 		});
 
 		session.on("reset", () => {
-			this.logLifecycle("sessionController:reset-to-terminal-mode", {
+			this.trace("sessionController:reset-to-terminal-mode", {
 				sessionId: this.id,
 			});
 		});
@@ -222,7 +222,7 @@ export class SessionController {
 		});
 
 		session.on("exit", ({exitCode, signal}) => {
-			this.logLifecycle("terminalProcess:exit", {
+			this.trace("terminalProcess:exit", {
 				sessionId: this.id,
 				exitCode,
 				signal,
@@ -259,7 +259,7 @@ export class SessionController {
 		const next = this.session.setMode(mode);
 
 		if (prev !== next) {
-			this.logLifecycle("sessionController:set-transport-mode", {
+			this.trace("sessionController:set-transport-mode", {
 				sessionId: this.id,
 				transportMode: next,
 				state: this.session.state,
@@ -290,7 +290,7 @@ export class SessionController {
 	}
 
 	async #attachBrowserSurface(normalizedPath) {
-		this.logLifecycle("attachBrowserSurface:start", {
+		this.trace("attachBrowserSurface:start", {
 			sessionId: this.id,
 			requestPath: normalizedPath,
 			hasDocument: Boolean(this.document),
@@ -300,7 +300,7 @@ export class SessionController {
 		const surface = await this.createOrReuseSurface(normalizedPath);
 		await surface.load(normalizedPath);
 
-		this.logLifecycle("attachBrowserSurface:done", {
+		this.trace("attachBrowserSurface:done", {
 			surfaceId: surface.id,
 			sessionId: this.id,
 			requestPath: normalizedPath,
@@ -313,7 +313,7 @@ export class SessionController {
 		const normalizedPath = normalizeRequestPath(requestPath);
 		const existingId = this.surfaceIdsByPath.get(normalizedPath);
 		if (existingId) {
-			this.logLifecycle("createSurface:reuse", {
+			this.trace("createSurface:reuse", {
 				sessionId: this.id,
 				requestPath: normalizedPath,
 				existingId,
@@ -330,7 +330,7 @@ export class SessionController {
 
 		this.surfaces.set(surface.id, surface);
 		this.surfaceIdsByPath.set(normalizedPath, surface.id);
-		this.logLifecycle("createSurface:done", {
+		this.trace("createSurface:done", {
 			surfaceId: surface.id,
 			sessionId: this.id,
 			requestPath: normalizedPath,
@@ -390,7 +390,7 @@ export class SessionController {
 		if (surface.title === nextTitle && surface.hasExplicitTitle) return;
 
 		surface.setTitle(nextTitle);
-		this.logLifecycle("updateSurfaceTitle", {surfaceId: surface.id, sessionId: this.id, title: nextTitle});
+		this.trace("updateSurfaceTitle", {surfaceId: surface.id, sessionId: this.id, title: nextTitle});
 		this.delegate.sessionControllerDidUpdateSurface(this, surface);
 	}
 
@@ -417,7 +417,7 @@ export class SessionController {
 	}
 
 	sendInterrupt() {
-		this.logLifecycle("sendInterrupt", {
+		this.trace("sendInterrupt", {
 			sessionId: this.id,
 			hasSession: Boolean(this.session),
 			isHttyActive: this.session?.isHttyActive() ?? false,

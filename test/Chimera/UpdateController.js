@@ -40,7 +40,7 @@ function createController({packaged = true, dialogResponses = []} = {}) {
 	const controller = new UpdateController({
 		app: {isPackaged: packaged},
 		dialog,
-		logLifecycle: (event, details = {}) => events.push({event, details}),
+		trace: (event, details = {}) => events.push({event, details}),
 		updaterLoader: async () => ({autoUpdater: updater}),
 		logger: null,
 	});

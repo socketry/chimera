@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, "..");
 
-export function logLifecycle(event, details = {}) {
+export function trace(event, details = {}) {
 	const timestamp = new Date().toISOString();
 	console.error(`[chimera ${timestamp}] ${event}`, details);
 }

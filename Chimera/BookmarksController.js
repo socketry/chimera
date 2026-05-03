@@ -2,9 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 
 export class BookmarksController {
-	constructor({configuration, logLifecycle = () => {}} = {}) {
+	constructor({configuration, trace = () => {}} = {}) {
 		this.configuration = configuration;
-		this.logLifecycle = logLifecycle;
+		this.trace = trace;
 	}
 
 	bookmarksDirectory() {
@@ -33,7 +33,7 @@ export class BookmarksController {
 					};
 				});
 		} catch (error) {
-			this.logLifecycle("bookmarks:load-failed", {directory, message: error.message});
+			this.trace("bookmarks:load-failed", {directory, message: error.message});
 			return [];
 		}
 	}

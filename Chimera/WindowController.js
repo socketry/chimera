@@ -2,7 +2,7 @@ import {BrowserWindow} from "electron";
 
 import {
 	inferTitle,
-	logLifecycle,
+	trace,
 	roundBounds,
 } from "./Utilities.js";
 import {SessionController} from "./SessionController.js";
@@ -22,8 +22,8 @@ export class WindowController {
 		return this.window?.id ?? null;
 	}
 
-	logLifecycle(event, details = {}) {
-		logLifecycle(event, details);
+	trace(event, details = {}) {
+		trace(event, details);
 	}
 
 	windowOptions(overrides = {}) {
@@ -94,7 +94,7 @@ export class WindowController {
 			return;
 		}
 
-		this.logLifecycle("focusMainRenderer", {windowId: this.id, reason});
+		this.trace("focusMainRenderer", {windowId: this.id, reason});
 		this.window.webContents.focus();
 	}
 
@@ -155,7 +155,7 @@ export class WindowController {
 		this.setActiveSession(session.id);
 		this.emitSessionCreated(session);
 		session.start();
-		this.logLifecycle("createSession:registered", {
+		this.trace("createSession:registered", {
 			windowId: this.id,
 			sessionId: session.id,
 			sessionIds: Array.from(this.sessions.keys()),
@@ -179,7 +179,7 @@ export class WindowController {
 			}
 		}
 		
-		this.logLifecycle("adoptSession", {
+		this.trace("adoptSession", {
 			windowId: this.id,
 			sessionId: session.id,
 			surfaceIds: Array.from(session.surfaces.keys()),
@@ -209,7 +209,7 @@ export class WindowController {
 			this.emitSessionUpdated(remainingSession);
 		}
 		
-		this.logLifecycle("releaseSession", {
+		this.trace("releaseSession", {
 			windowId: this.id,
 			sessionId,
 			remainingSessionIds: Array.from(this.sessions.keys()),
@@ -245,7 +245,7 @@ export class WindowController {
 			return;
 		}
 
-		this.logLifecycle("attachSurfaceView:start", {
+		this.trace("attachSurfaceView:start", {
 			windowId: this.id,
 			surfaceId: surface.id,
 			sessionId: surface.sessionId,
@@ -273,7 +273,7 @@ export class WindowController {
 		surface.visible = true;
 		surface.view.setVisible(true);
 
-		this.logLifecycle("attachSurfaceView:done", {
+		this.trace("attachSurfaceView:done", {
 			windowId: this.id,
 			surfaceId: surface.id,
 			sessionId: surface.sessionId,
@@ -283,7 +283,7 @@ export class WindowController {
 
 	detachSurfaceView(surfaceId) {
 		const surface = this.surfaces.get(surfaceId);
-		this.logLifecycle("detachSurfaceView:start", {
+		this.trace("detachSurfaceView:start", {
 			windowId: this.id,
 			surfaceId,
 			hasSurface: Boolean(surface),
@@ -357,7 +357,7 @@ export class WindowController {
 
 	closeSurface(surfaceId) {
 		const surface = this.surfaces.get(surfaceId);
-		this.logLifecycle("closeSurface:start", {
+		this.trace("closeSurface:start", {
 			windowId: this.id,
 			surfaceId,
 			hasSurface: Boolean(surface),
@@ -370,7 +370,7 @@ export class WindowController {
 		this.detachSurfaceView(surfaceId);
 		const session = this.sessions.get(surface.sessionId);
 		session?.closeSurface(surfaceId);
-		this.logLifecycle("closeSurface:done", {
+		this.trace("closeSurface:done", {
 			windowId: this.id,
 			surfaceId,
 			sessionId: surface.sessionId,
@@ -382,7 +382,7 @@ export class WindowController {
 
 	closeSession(sessionId) {
 		const session = this.sessions.get(sessionId);
-		this.logLifecycle("closeSession:start", {
+		this.trace("closeSession:start", {
 			windowId: this.id,
 			sessionId,
 			hasSession: Boolean(session),
@@ -397,7 +397,7 @@ export class WindowController {
 		session.close();
 		this.finalizeSessionRemoval(sessionId);
 
-		this.logLifecycle("closeSession:done", {
+		this.trace("closeSession:done", {
 			windowId: this.id,
 			sessionId,
 			activeSessionId: this.activeSessionId,

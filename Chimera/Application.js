@@ -5,7 +5,7 @@ import {fileURLToPath} from "node:url";
 import {BookmarksController} from "./BookmarksController.js";
 import {Configuration} from "./Configuration.js";
 import {DarwinWindowController} from "./DarwinWindowController.js";
-import {logLifecycle} from "./Utilities.js";
+import {trace} from "./Utilities.js";
 import {UpdateController} from "./UpdateController.js";
 import {WindowController} from "./WindowController.js";
 
@@ -20,19 +20,19 @@ export class ChimeraApplication {
 		this.configuration = new Configuration();
 		this.bookmarksController = new BookmarksController({
 			configuration: this.configuration,
-			logLifecycle: this.logLifecycle.bind(this),
+			trace: this.trace.bind(this),
 		});
 		this.rendererPath = path.join(__dirname, "renderer.html");
 		this.preloadPath = path.join(__dirname, "preload.cjs");
 		this.updateController = new UpdateController({
 			app,
 			dialog,
-			logLifecycle: this.logLifecycle.bind(this),
+			trace: this.trace.bind(this),
 		});
 	}
 
-	logLifecycle(event, details = {}) {
-		logLifecycle(event, details);
+	trace(event, details = {}) {
+		trace(event, details);
 	}
 
 	nextSessionId() {
@@ -304,7 +304,7 @@ export class ChimeraApplication {
 			const controller = this.controllerForSender(event.sender);
 			const command = options.command || process.env.SHELL || "/bin/zsh";
 			const args = Array.isArray(options.args) ? options.args : [];
-			this.logLifecycle("ipc:start", {command, args, cwd: options.cwd, windowId: controller?.id ?? null});
+			this.trace("ipc:start", {command, args, cwd: options.cwd, windowId: controller?.id ?? null});
 			return controller?.createSession(command, args, {cwd: options.cwd}) ?? null;
 		});
 
@@ -328,7 +328,7 @@ export class ChimeraApplication {
 
 		ipcMain.handle("chimera:close-session", (event, sessionId) => {
 			const controller = this.controllerForSender(event.sender);
-			this.logLifecycle("ipc:close-session", {sessionId, windowId: controller?.id ?? null});
+			this.trace("ipc:close-session", {sessionId, windowId: controller?.id ?? null});
 			return controller?.closeSession(sessionId) ?? false;
 		});
 
