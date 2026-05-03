@@ -25,6 +25,7 @@ async function launchChimera() {
 		args: [projectRoot],
 		env: {
 			...process.env,
+			CHIMERA_E2E: "1",
 			CHIMERA_CONFIG_PATH: configPath,
 		},
 	});
@@ -45,6 +46,27 @@ async function waitForActiveSurfaceId(window) {
 
 	assert.ok(surfaceId, "active surface should expose a surface ID");
 	return surfaceId;
+}
+
+async function evaluateSurface(electronApp, surfaceId, script) {
+	return electronApp.evaluate((_electron, {surfaceId, script}) => {
+		return globalThis.chimeraE2E.evaluateSurface(surfaceId, script);
+	}, {surfaceId, script});
+}
+
+async function waitForSurfaceEvaluation(electronApp, surfaceId, script, predicate, {timeout = 5000} = {}) {
+	const startedAt = Date.now();
+	
+	while (Date.now() - startedAt < timeout) {
+		const value = await evaluateSurface(electronApp, surfaceId, script);
+		if (predicate(value)) {
+			return value;
+		}
+		
+		await new Promise((resolve) => setTimeout(resolve, 100));
+	}
+	
+	throw new Error("Timed out waiting for surface evaluation.");
 }
 
 async function shellSessionId(window) {
@@ -173,15 +195,14 @@ test("toggle tab bar resizes active browser surfaces", {concurrency: false}, asy
 	try {
 		await launchExampleFromShell(window, "hello-world.mjs");
 		const surfaceId = await waitForActiveSurfaceId(window);
-		const before = await window.evaluate((id) => window.chimera.evaluateSurface(id, "window.innerHeight"), surfaceId);
+		const before = await evaluateSurface(electronApp, surfaceId, "window.innerHeight");
 		
 		const enabled = await window.evaluate(() => window.chimera.toggleTabBar());
 		assert.equal(enabled, true);
 		await window.waitForSelector(".tab-strip-shell", {state: "hidden"});
-		await window.waitForFunction(async (id, previousHeight) => {
-			const height = await window.chimera.evaluateSurface(id, "window.innerHeight");
-			return Number(height) > Number(previousHeight);
-		}, surfaceId, before);
+		await waitForSurfaceEvaluation(electronApp, surfaceId, "window.innerHeight", (height) => {
+			return Number(height) > Number(before);
+		});
 	} finally {
 		await electronApp.close();
 	}
@@ -428,9 +449,7 @@ test("platformer demo serves a full-canvas game surface", {concurrency: false}, 
 		await launchExampleFromShell(window, "platformer-demo.mjs");
 		await window.waitForFunction(() => document.querySelector(".tab-panel:not([hidden]) .surface-panel:not([hidden])"));
 		const surfaceId = await waitForActiveSurfaceId(window);
-		const text = await window.evaluate((id) => {
-			return window.chimera.evaluateSurface(id, "document.title + ' ' + Boolean(document.querySelector('canvas#game'))");
-		}, surfaceId);
+		const text = await evaluateSurface(electronApp, surfaceId, "document.title + ' ' + Boolean(document.querySelector('canvas#game'))");
 		
 		assert.equal(text, "HTTY Platformer true");
 	} finally {
@@ -445,13 +464,11 @@ test("configuration demo serves a light-dark aware configuration UI", {concurren
 		await launchExampleFromShell(window, "chimera-configuration.mjs");
 		await window.waitForFunction(() => document.querySelector(".tab-panel:not([hidden]) .surface-panel:not([hidden])"));
 		const surfaceId = await waitForActiveSurfaceId(window);
-		const result = await window.evaluate((id) => {
-			return window.chimera.evaluateSurface(id, [
-				"document.title",
-				"Boolean(document.querySelector('form#config-form'))",
-				"getComputedStyle(document.documentElement).colorScheme",
-			].join(" + '|' + "));
-		}, surfaceId);
+		const result = await evaluateSurface(electronApp, surfaceId, [
+			"document.title",
+			"Boolean(document.querySelector('form#config-form'))",
+			"getComputedStyle(document.documentElement).colorScheme",
+		].join(" + '|' + "));
 		
 		const [title, hasForm, colorScheme] = result.split("|");
 		assert.equal(title, "Chimera Configuration");

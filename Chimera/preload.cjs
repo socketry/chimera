@@ -1,6 +1,6 @@
 const {clipboard, contextBridge, ipcRenderer} = require("electron");
 
-contextBridge.exposeInMainWorld("chimera", {
+const chimera = {
 	getSessions() {
 		return ipcRenderer.invoke("chimera:get-sessions");
 	},
@@ -39,9 +39,6 @@ contextBridge.exposeInMainWorld("chimera", {
 	},
 	syncSurfaceView(surfaceId, state) {
 		ipcRenderer.send("chimera:surface-view-state", {surfaceId, state});
-	},
-	evaluateSurface(surfaceId, script) {
-		return ipcRenderer.invoke("chimera:evaluate-surface", surfaceId, script);
 	},
 	closeSession(sessionId) {
 		return ipcRenderer.invoke("chimera:close-session", sessionId);
@@ -106,4 +103,6 @@ contextBridge.exposeInMainWorld("chimera", {
 	onShowBookmarksHelp(callback) {
 		ipcRenderer.on("chimera:show-bookmarks-help", () => callback());
 	},
-});
+};
+
+contextBridge.exposeInMainWorld("chimera", chimera);

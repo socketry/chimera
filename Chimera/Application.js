@@ -1,4 +1,4 @@
-import {app, BrowserWindow, dialog, protocol} from "electron";
+import {app, BrowserWindow, dialog, ipcMain, protocol} from "electron";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 
@@ -20,13 +20,14 @@ export class ChimeraApplication {
 		this.windowControllers = new Map();
 		this.sessionCounter = 0;
 		this.surfaceCounter = 0;
+		this.environment = process.env;
 		this.configuration = new Configuration();
 		this.bookmarksController = new BookmarksController({
 			configuration: this.configuration,
 			trace: this.trace.bind(this),
 		});
 		this.menuController = new MenuController(this);
-		this.rendererCommandDispatcher = new RendererCommandDispatcher(this);
+		this.rendererCommandDispatcher = new RendererCommandDispatcher(this, {ipcMain});
 		this.rendererPath = path.join(__dirname, "renderer.html");
 		this.preloadPath = path.join(__dirname, "preload.cjs");
 		this.updateController = new UpdateController({
@@ -36,6 +37,12 @@ export class ChimeraApplication {
 			options: this.configuration.updateOptions(),
 			trace: this.trace.bind(this),
 		});
+		
+		if (this.environment.CHIMERA_E2E === "1") {
+			globalThis.chimeraE2E = {
+				evaluateSurface: (surfaceId, script) => this.evaluateSurfaceForTesting(surfaceId, script),
+			};
+		}
 	}
 
 	trace(event, details = {}) {
@@ -210,6 +217,22 @@ export class ChimeraApplication {
 	focusedWindowController() {
 		const browserWindow = BrowserWindow.getFocusedWindow();
 		return browserWindow ? this.windowControllers.get(browserWindow.id) ?? null : null;
+	}
+	
+	surfaceForId(surfaceId) {
+		for (const controller of this.windowControllers.values()) {
+			const surface = controller.surfaces.get(surfaceId);
+			if (surface) {
+				return surface;
+			}
+		}
+		
+		return null;
+	}
+	
+	evaluateSurfaceForTesting(surfaceId, script) {
+		const surface = this.surfaceForId(surfaceId);
+		return surface?.view.webContents.executeJavaScript(script) ?? null;
 	}
 
 	buildApplicationMenu() {
