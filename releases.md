@@ -3,6 +3,7 @@
 ## Unreleased
 
   - Add native Linux window controls and default new windows to non-fullscreen mode.
+  - Make `Configuration` loading more robust and log errors to `console`.
 
 ## v0.4.1
 

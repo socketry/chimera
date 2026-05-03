@@ -76,8 +76,20 @@ export class Configuration {
 			return {};
 		}
 
-		const text = fs.readFileSync(this.configPath, "utf8");
-		return JSON.parse(text);
+		try {
+			const text = fs.readFileSync(this.configPath, "utf8");
+			const configuration = JSON.parse(text);
+			
+			if (!isObject(configuration)) {
+				console.log("Unable to load Chimera configuration:", new Error("Configuration file must contain a JSON object."));
+				return {};
+			}
+			
+			return configuration;
+		} catch (error) {
+			console.log("Unable to load Chimera configuration:", error);
+			return {};
+		}
 	}
 
 	reload() {
@@ -127,7 +139,12 @@ export class Configuration {
 		const stylesheetPath = this.themeStylesheetPath();
 		if (!stylesheetPath) return null;
 		
-		return fs.readFileSync(stylesheetPath, "utf8");
+		try {
+			return fs.readFileSync(stylesheetPath, "utf8");
+		} catch (error) {
+			console.log("Unable to load Chimera theme stylesheet:", error);
+			return null;
+		}
 	}
 
 	bookmarksPath() {

@@ -6,6 +6,21 @@ import test from "node:test";
 
 import {Configuration} from "../../Chimera/Configuration.js";
 
+function captureConsoleLog(callback) {
+	const originalLog = console.log;
+	const logs = [];
+	
+	console.log = (...args) => {
+		logs.push(args);
+	};
+	
+	try {
+		return {result: callback(), logs};
+	} finally {
+		console.log = originalLog;
+	}
+}
+
 test("uses an application state directory for the default configuration", () => {
 	const previousConfigPath = process.env.CHIMERA_CONFIG_PATH;
 
@@ -36,6 +51,56 @@ test("resolves theme stylesheet relative to the configuration file", () => {
 	
 	assert.equal(configuration.themeStylesheetPath(), stylesheetPath);
 	assert.equal(configuration.themeStylesheet(), ":root { --accent: hotpink; }");
+});
+
+test("falls back to defaults when configuration JSON is invalid", () => {
+	const directory = fs.mkdtempSync(path.join(os.tmpdir(), "chimera-config-"));
+	const configPath = path.join(directory, "chimera.json");
+	
+	fs.writeFileSync(configPath, "{nope");
+	
+	const {result: configuration, logs} = captureConsoleLog(() => new Configuration({configPath}));
+	
+	assert.equal(configuration.windowOptions().width, 1440);
+	assert.equal(configuration.terminalOptions().fontSize, 15);
+	assert.equal(logs.length, 1);
+	assert.equal(logs[0][0], "Unable to load Chimera configuration:");
+	assert.ok(logs[0][1] instanceof SyntaxError);
+});
+
+test("falls back to defaults when configuration JSON is not an object", () => {
+	const directory = fs.mkdtempSync(path.join(os.tmpdir(), "chimera-config-"));
+	const configPath = path.join(directory, "chimera.json");
+	
+	fs.writeFileSync(configPath, "[]");
+	
+	const {result: configuration, logs} = captureConsoleLog(() => new Configuration({configPath}));
+	
+	assert.equal(configuration.terminalOptions().fontSize, 15);
+	assert.equal(logs.length, 1);
+	assert.equal(logs[0][0], "Unable to load Chimera configuration:");
+	assert.equal(logs[0][1].message, "Configuration file must contain a JSON object.");
+});
+
+test("missing theme stylesheets return null", () => {
+	const directory = fs.mkdtempSync(path.join(os.tmpdir(), "chimera-config-"));
+	const configPath = path.join(directory, "chimera.json");
+	const stylesheetPath = path.join(directory, "missing.css");
+	
+	fs.writeFileSync(configPath, JSON.stringify({
+		theme: {
+			stylesheet: "missing.css",
+		},
+	}));
+	
+	const configuration = new Configuration({configPath});
+	
+	assert.equal(configuration.themeStylesheetPath(), stylesheetPath);
+	const {result: stylesheet, logs} = captureConsoleLog(() => configuration.themeStylesheet());
+	assert.equal(stylesheet, null);
+	assert.equal(logs.length, 1);
+	assert.equal(logs[0][0], "Unable to load Chimera theme stylesheet:");
+	assert.equal(logs[0][1].code, "ENOENT");
 });
 
 test("profile theme configuration overrides the default theme", () => {
@@ -153,4 +218,30 @@ test("reload rereads configuration from disk", () => {
 	configuration.reload();
 
 	assert.equal(configuration.terminalOptions().fontSize, 22);
+});
+
+test("reload falls back to defaults when configuration JSON becomes invalid", () => {
+	const directory = fs.mkdtempSync(path.join(os.tmpdir(), "chimera-config-"));
+	const configPath = path.join(directory, "chimera.json");
+	
+	fs.writeFileSync(configPath, JSON.stringify({
+		terminal: {
+			fontSize: 18,
+		},
+		theme: {
+			stylesheet: "missing.css",
+		},
+	}));
+	
+	const configuration = new Configuration({configPath});
+	assert.equal(configuration.terminalOptions().fontSize, 18);
+	assert.equal(captureConsoleLog(() => configuration.themeStylesheet()).result, null);
+	
+	fs.writeFileSync(configPath, "{broken");
+	const {logs} = captureConsoleLog(() => configuration.reload());
+	
+	assert.equal(configuration.terminalOptions().fontSize, 15);
+	assert.equal(logs.length, 1);
+	assert.equal(logs[0][0], "Unable to load Chimera configuration:");
+	assert.ok(logs[0][1] instanceof SyntaxError);
 });
