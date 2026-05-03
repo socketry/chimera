@@ -80,6 +80,12 @@ export class Configuration {
 		return JSON.parse(text);
 	}
 
+	reload() {
+		this.fileConfiguration = this.loadFileConfiguration();
+		this.configuration = mergeObjects(DEFAULT_CONFIGURATION, this.fileConfiguration);
+		return this;
+	}
+
 	profileConfiguration() {
 		if (!this.profileName) {
 			return {};

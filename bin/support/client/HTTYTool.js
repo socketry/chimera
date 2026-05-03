@@ -24,3 +24,12 @@ export async function refreshChimeraBookmarks() {
 		throw new Error("Could not refresh Chimera bookmarks.");
 	}
 }
+
+export async function refreshChimeraConfiguration() {
+	const response = await fetch("/.well-known/chimera/configuration/refresh", {
+		method: "POST",
+	});
+	if (!response.ok) {
+		throw new Error("Could not refresh Chimera configuration.");
+	}
+}

@@ -190,6 +190,10 @@ export class WorkspaceController {
 			this.setTabBarHidden(Boolean(hidden));
 		});
 
+		this.windowApi.onConfigurationUpdated(({terminalOptions}) => {
+			this.applyConfiguration({terminalOptions});
+		});
+
 		this.windowApi.onShowReleases(() => {
 			void this.showReleases();
 		});
@@ -197,6 +201,13 @@ export class WorkspaceController {
 		this.windowApi.onShowBookmarksHelp(() => {
 			void this.showBookmarksHelp();
 		});
+	}
+
+	applyConfiguration({terminalOptions = {}} = {}) {
+		this.terminalOptions = terminalOptions;
+		for (const tab of this.tabs.values()) {
+			tab.applyTerminalOptions?.(terminalOptions);
+		}
 	}
 
 	async showReleases() {

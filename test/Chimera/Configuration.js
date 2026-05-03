@@ -130,3 +130,27 @@ test("profile update configuration overrides the default update options", () => 
 		recheckIntervalHours: 72,
 	});
 });
+
+test("reload rereads configuration from disk", () => {
+	const directory = fs.mkdtempSync(path.join(os.tmpdir(), "chimera-config-"));
+	const configPath = path.join(directory, "chimera.json");
+
+	fs.writeFileSync(configPath, JSON.stringify({
+		terminal: {
+			fontSize: 14,
+		},
+	}));
+
+	const configuration = new Configuration({configPath});
+	assert.equal(configuration.terminalOptions().fontSize, 14);
+
+	fs.writeFileSync(configPath, JSON.stringify({
+		terminal: {
+			fontSize: 22,
+		},
+	}));
+
+	configuration.reload();
+
+	assert.equal(configuration.terminalOptions().fontSize, 22);
+});

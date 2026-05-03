@@ -283,6 +283,16 @@ export class TerminalPane extends Pane {
 	writeData(data) {
 		this.terminal.write(data);
 	}
+
+	applyTerminalOptions(options = {}) {
+		for (const [key, value] of Object.entries(options)) {
+			if (key === "theme") continue;
+			this.terminal.options[key] = value;
+		}
+
+		this.terminal.options.theme = terminalTheme();
+		this.fit();
+	}
 	
 	writeExit(exitCode, signal) {
 		this.terminal.writeln(`\r\n[process exited: ${exitCode ?? signal ?? "unknown"}]`);

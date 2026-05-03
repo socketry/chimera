@@ -161,6 +161,10 @@ export class SurfaceController {
 		this.delegate.surfaceControllerDidRequestBookmarksRefresh?.(this);
 	}
 
+	wellKnownControllerDidRequestConfigurationRefresh() {
+		this.delegate.surfaceControllerDidRequestConfigurationRefresh?.(this);
+	}
+
 	close() {
 		this.visible = false;
 		this.focused = false;

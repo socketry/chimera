@@ -426,6 +426,14 @@ export class SessionController {
 		this.delegate.sessionControllerDidRequestBookmarksRefresh?.(this, surface);
 	}
 
+	surfaceControllerDidRequestConfigurationRefresh(surface) {
+		this.trace("surfaceController:configuration-refresh", {
+			sessionId: this.id,
+			surfaceId: surface.id,
+		});
+		this.delegate.sessionControllerDidRequestConfigurationRefresh?.(this, surface);
+	}
+
 	surfaceControllerDidChange(surface) {
 		this.delegate.sessionControllerDidUpdateSurface(this, surface);
 	}

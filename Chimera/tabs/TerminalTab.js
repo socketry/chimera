@@ -17,6 +17,10 @@ export class TerminalTab extends Tab {
 	writeData(data) {
 		this.terminalPane?.writeData(data);
 	}
+
+	applyTerminalOptions(options) {
+		this.terminalPane?.applyTerminalOptions(options);
+	}
 	
 	writeExit(exitCode, signal) {
 		this.terminalPane?.writeExit(exitCode, signal);

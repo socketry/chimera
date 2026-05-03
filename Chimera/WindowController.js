@@ -16,6 +16,7 @@ export class WindowController {
 		this.activeSessionId = null;
 		this.activeSurfaceId = null;
 		this.isTabBarHidden = false;
+		this.insertedThemeKey = null;
 	}
 
 	get id() {
@@ -71,10 +72,26 @@ export class WindowController {
 	}
 
 	async applyUserTheme() {
+		if (this.insertedThemeKey) {
+			try {
+				await this.window.webContents.removeInsertedCSS(this.insertedThemeKey);
+			} catch {
+				// Ignore stale stylesheet keys after renderer reloads.
+			}
+			this.insertedThemeKey = null;
+		}
+
 		const stylesheet = this.application.configuration.themeStylesheet();
 		if (!stylesheet) return;
 		
-		await this.window.webContents.insertCSS(stylesheet, {cssOrigin: "author"});
+		this.insertedThemeKey = await this.window.webContents.insertCSS(stylesheet, {cssOrigin: "author"});
+	}
+
+	async applyConfiguration() {
+		await this.applyUserTheme();
+		this.emitToRenderer("configuration:updated", {
+			terminalOptions: this.application.configuration.terminalOptions(),
+		});
 	}
 
 	hasSender(sender) {
@@ -515,6 +532,10 @@ export class WindowController {
 
 	sessionControllerDidRequestBookmarksRefresh() {
 		this.application.buildApplicationMenu();
+	}
+
+	sessionControllerDidRequestConfigurationRefresh() {
+		void this.application.reloadConfiguration();
 	}
 
 	sessionControllerDidRequestInitialSurface(session) {

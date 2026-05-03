@@ -46,6 +46,25 @@ test("passes streamed subresource responses through without buffering", async ()
 	assert.equal(await response.text(), "one two");
 });
 
+test("ignores stream chunks after a subresource response is cancelled", async () => {
+	const body = new PassThrough();
+	const response = await handleRequest(createClient({
+		status: 200,
+		headers: {"content-type": "text/plain; charset=utf-8"},
+		body,
+	}), {
+		path: "/events",
+		request: new Request("https://chimera.local/events"),
+	});
+
+	await response.body.cancel();
+
+	assert.doesNotThrow(() => {
+		body.write("late");
+		body.end();
+	});
+});
+
 test("buffers streamed document responses before wrapping them", async () => {
 	const body = new PassThrough();
 	const responsePromise = handleRequest(createClient({

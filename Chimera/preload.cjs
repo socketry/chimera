@@ -97,6 +97,9 @@ contextBridge.exposeInMainWorld("chimera", {
 	onTabBarHidden(callback) {
 		ipcRenderer.on("chimera:tab-bar-hidden", (_event, payload) => callback(payload));
 	},
+	onConfigurationUpdated(callback) {
+		ipcRenderer.on("configuration:updated", (_event, payload) => callback(payload));
+	},
 	onShowReleases(callback) {
 		ipcRenderer.on("chimera:show-releases", () => callback());
 	},

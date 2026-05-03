@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
 	CHIMERA_BOOKMARKS_REFRESH_PATH,
+	CHIMERA_CONFIGURATION_REFRESH_PATH,
 	WellKnownController,
 } from "../../Chimera/WellKnownController.js";
 
@@ -48,4 +49,20 @@ test("rejects non-POST bookmark refresh requests", async () => {
 	assert.equal(response.headers.get("allow"), "POST");
 	assert.equal(await response.text(), "Method Not Allowed");
 	assert.equal(refreshes, 0);
+});
+
+test("refreshes configuration with the Chimera configuration well-known route", () => {
+	let refreshes = 0;
+	const controller = new WellKnownController({
+		wellKnownControllerDidRequestConfigurationRefresh() {
+			refreshes += 1;
+		},
+	});
+	const response = controller.handleRequest({
+		request: new Request("https://chimera.local/.well-known/chimera/configuration/refresh", {method: "POST"}),
+		path: CHIMERA_CONFIGURATION_REFRESH_PATH,
+	});
+
+	assert.equal(response.status, 204);
+	assert.equal(refreshes, 1);
 });

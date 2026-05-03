@@ -37,6 +37,17 @@ export class UpdateController {
 		this.recheckTimer = null;
 	}
 
+	setOptions(options = {}) {
+		this.options = {
+			enabled: true,
+			autoCheck: true,
+			recheckIntervalHours: 24,
+			...options,
+		};
+		this.stop();
+		this.scheduleRechecks();
+	}
+
 	updatesEnabled() {
 		return Boolean(this.options.enabled) && Boolean(this.app?.isPackaged) && this.environment.CHIMERA_DISABLE_AUTO_UPDATE !== "1";
 	}

@@ -9,6 +9,8 @@ const example = data.exampleBookmarks;
 let rawJson = data.bookmarksText || "[]\n";
 let bookmarks = parseBookmarks(rawJson) ?? [];
 let notice = null;
+let dirty = false;
+let saving = false;
 const expandedBookmarks = new WeakSet();
 
 function parseBookmarks(text) {
@@ -69,8 +71,9 @@ function syncJson() {
 	rawJson = `${JSON.stringify(bookmarks.map(cleanBookmark), null, "\t")}\n`;
 }
 
-function setNotice(kind, text) {
-	notice = {kind, text};
+function markDirty() {
+	dirty = true;
+	notice = null;
 	renderApp();
 }
 
@@ -79,27 +82,27 @@ function setRawJson(value) {
 	const parsed = parseBookmarks(value);
 	if (parsed) {
 		bookmarks = parsed;
-		renderApp();
 	}
+	markDirty();
 }
 
 function addBookmark(type, items = bookmarks) {
 	items.push(type === "separator" ? separatorBookmark() : type === "group" ? groupBookmark() : commandBookmark());
 	syncJson();
-	renderApp();
+	markDirty();
 }
 
 function updateBookmark(bookmark, patch) {
 	Object.assign(bookmark, patch);
 	syncJson();
-	renderApp();
+	markDirty();
 }
 
 function changeBookmarkType(items, index, type) {
 	const title = items[index].title || "";
 	items[index] = type === "separator" ? separatorBookmark() : type === "group" ? groupBookmark(title || "New Group") : commandBookmark(title || "New Bookmark");
 	syncJson();
-	renderApp();
+	markDirty();
 }
 
 function moveBookmark(items, index, offset) {
@@ -107,13 +110,13 @@ function moveBookmark(items, index, offset) {
 	if (target < 0 || target >= items.length) return;
 	items.splice(target, 0, items.splice(index, 1)[0]);
 	syncJson();
-	renderApp();
+	markDirty();
 }
 
 function deleteBookmark(items, index) {
 	items.splice(index, 1);
 	syncJson();
-	renderApp();
+	markDirty();
 }
 
 function bookmarkContains(bookmark, target) {
@@ -148,7 +151,7 @@ function moveBookmarkTo(sourceItems, index, targetItems) {
 	if (!targetItems || targetItems === sourceItems) return;
 	targetItems.push(sourceItems.splice(index, 1)[0]);
 	syncJson();
-	renderApp();
+	markDirty();
 }
 
 function toggleExpanded(bookmark) {
@@ -162,15 +165,23 @@ function toggleExpanded(bookmark) {
 
 async function saveBookmarks(event) {
 	event.preventDefault();
+	if (!dirty || saving) return;
 	if (!event.currentTarget.reportValidity()) return;
 
 	syncJson();
+	saving = true;
+	renderApp();
+
 	try {
 		await postJson("/save", {bookmarks: rawJson});
 		await refreshChimeraBookmarks();
-		setNotice("success", "Bookmarks saved.");
+		dirty = false;
+		notice = {kind: "success", text: "Bookmarks saved."};
 	} catch (error) {
-		setNotice("error", error.message || "Could not save bookmarks.");
+		notice = {kind: "error", text: error.message || "Could not save bookmarks."};
+	} finally {
+		saving = false;
+		renderApp();
 	}
 }
 
@@ -193,6 +204,7 @@ function updateArgs(bookmark, input) {
 		bookmark.args = parsed.map(String);
 		input.setCustomValidity("");
 		syncJson();
+		markDirty();
 	} catch {
 		input.setCustomValidity("Args must be a JSON array.");
 	}
@@ -240,7 +252,7 @@ function updateCwd(bookmark, value) {
 		delete bookmark.cwd;
 	}
 	syncJson();
-	renderApp();
+	markDirty();
 }
 
 function bookmarkCard(items, bookmark, index, depth) {
@@ -309,10 +321,15 @@ function emptyState() {
 function renderApp() {
 	render(html`
 		<header>
-			<h1>Bookmarks</h1>
-			<p>Edit <code>${data.bookmarksPath}</code>.</p>
+			<div class="header-copy">
+				<h1>Bookmarks</h1>
+				<p>Edit <code>${data.bookmarksPath}</code>.</p>
+			</div>
+			<div class="header-actions">
+				${notice ? html`<span class="notice" data-kind=${notice.kind}>${notice.text}</span>` : dirty ? html`<span class="notice" data-kind="dirty">Unsaved changes</span>` : ""}
+				<button class="save-button" type="submit" form="bookmarks-form" data-dirty=${dirty} ?disabled=${!dirty || saving}>${saving ? "Saving..." : "Save"}</button>
+			</div>
 		</header>
-		${notice ? html`<section class="notice" data-kind=${notice.kind}>${notice.text}</section>` : ""}
 		<form id="bookmarks-form" @submit=${saveBookmarks}>
 			<div class="toolbar">
 				<button type="button" @click=${() => addBookmark("command")}>Add Command</button>
@@ -327,9 +344,6 @@ function renderApp() {
 				<summary>JSON</summary>
 				<textarea spellcheck="false" .value=${rawJson} @input=${(event) => setRawJson(event.currentTarget.value)}></textarea>
 			</details>
-			<div class="actions">
-				<button type="submit">Save</button>
-			</div>
 		</form>
 	`, app);
 }
@@ -337,7 +351,7 @@ function renderApp() {
 function insertExample() {
 	bookmarks = structuredClone(example);
 	syncJson();
-	renderApp();
+	markDirty();
 }
 
 renderApp();

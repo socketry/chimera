@@ -95,6 +95,27 @@ export class ChimeraApplication {
 		});
 	}
 
+	async editConfiguration() {
+		const controller = this.focusedWindowController() ?? Array.from(this.windowControllers.values())[0] ?? await this.createWindow();
+		const editorPath = this.configurationEditorPath();
+		const command = this.shellCommandForScript(editorPath);
+		controller.window?.focus();
+		controller.createSession(process.env.SHELL || "/bin/zsh", ["-lc", command], {
+			cwd: path.dirname(editorPath),
+			title: "Edit Configuration",
+		});
+	}
+
+	async reloadConfiguration() {
+		this.configuration.reload();
+		this.updateController.setOptions(this.configuration.updateOptions());
+		this.buildApplicationMenu();
+
+		await Promise.all(Array.from(this.windowControllers.values(), (controller) => {
+			return controller.applyConfiguration?.();
+		}));
+	}
+
 	async openBookmark(bookmark) {
 		const controller = this.focusedWindowController() ?? Array.from(this.windowControllers.values())[0] ?? await this.createWindow();
 		controller.window?.focus();
@@ -157,6 +178,14 @@ export class ChimeraApplication {
 		return path.join(this.applicationRoot(), "bin", "chimera-bookmarks-editor");
 	}
 
+	configurationEditorPath() {
+		if (app.isPackaged) {
+			return path.join(process.resourcesPath, "app.asar.unpacked", "bin", "chimera-configuration-editor");
+		}
+
+		return path.join(this.applicationRoot(), "bin", "chimera-configuration-editor");
+	}
+
 	shellQuote(value) {
 		return `'${String(value).replaceAll("'", "'\\''")}'`;
 	}
@@ -174,7 +203,7 @@ export class ChimeraApplication {
 		const bookmarks = this.bookmarksController.bookmarks();
 		const bookmarkMenuItems = this.bookmarkMenuItems(bookmarks);
 		const template = [
-			...(process.platform === "darwin" ? [{role: "appMenu"}] : []),
+			this.applicationMenu(),
 			{
 				label: "Session",
 				submenu: [
@@ -265,12 +294,6 @@ export class ChimeraApplication {
 				label: "Help",
 				submenu: [
 					{
-						label: "Check for Updates",
-						click: () => {
-							void this.updateController.checkForUpdates({userInitiated: true});
-						},
-					},
-					{
 						label: "Releases",
 						click: () => {
 							void this.showReleases();
@@ -287,6 +310,47 @@ export class ChimeraApplication {
 		];
 
 		Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+	}
+
+	applicationMenu() {
+		const applicationItems = [
+			{
+				label: "Edit Configuration",
+				click: () => {
+					void this.editConfiguration();
+				},
+			},
+			{
+				label: "Check for Updates",
+				click: () => {
+					void this.updateController.checkForUpdates({userInitiated: true});
+				},
+			},
+		];
+
+		if (process.platform !== "darwin") {
+			return {
+				label: "Chimera",
+				submenu: applicationItems,
+			};
+		}
+
+		return {
+			label: app.name,
+			submenu: [
+				{role: "about"},
+				{type: "separator"},
+				...applicationItems,
+				{type: "separator"},
+				{role: "services"},
+				{type: "separator"},
+				{role: "hide"},
+				{role: "hideOthers"},
+				{role: "unhide"},
+				{type: "separator"},
+				{role: "quit"},
+			],
+		};
 	}
 
 	bookmarkMenuItems(bookmarks) {

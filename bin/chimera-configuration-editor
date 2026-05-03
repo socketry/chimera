@@ -1,0 +1,82 @@
+#!/usr/bin/env node
+
+import fs from "node:fs";
+import path from "node:path";
+import {fileURLToPath} from "node:url";
+
+import {Application} from "@socketry/htty";
+
+import {Configuration} from "../Chimera/Configuration.js";
+import {
+	dirnameFromMeta,
+	htmlResponse,
+	jsonResponse,
+	litImportMap,
+	nodeModulesResponse,
+	renderTemplateFile,
+	scriptJson,
+	staticFileResponse,
+} from "./support/HTTYToolServer.js";
+
+const here = dirnameFromMeta(import.meta.url);
+const projectRoot = path.dirname(here);
+const assetsDirectory = path.join(here, "assets");
+const supportClientDirectory = path.join(here, "support", "client");
+const templatePath = path.join(assetsDirectory, "chimera-configuration-editor.html");
+
+export function readConfigurationText(configuration) {
+	if (!fs.existsSync(configuration.configPath)) {
+		return `${JSON.stringify(configuration.configuration, null, "\t")}\n`;
+	}
+
+	return fs.readFileSync(configuration.configPath, "utf8");
+}
+
+export function writeConfigurationText(text, {configPath}) {
+	const parsed = JSON.parse(text || "{}");
+	if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+		throw new TypeError("configuration must contain a JSON object.");
+	}
+
+	fs.mkdirSync(path.dirname(configPath), {recursive: true});
+	fs.writeFileSync(configPath, `${JSON.stringify(parsed, null, "\t")}\n`);
+}
+
+export function renderPage({configuration}) {
+	return htmlResponse(renderTemplateFile(templatePath, {
+		importMapJson: scriptJson(litImportMap()),
+		initialDataJson: scriptJson({
+			configPath: configuration.configPath,
+			configText: readConfigurationText(configuration),
+		}),
+	}));
+}
+
+export function createConfigurationEditorApp({configuration = new Configuration()} = {}) {
+	return ({method, path: requestPath, body}) => {
+		if (method === "POST" && requestPath === "/save") {
+			try {
+				const payload = JSON.parse(body || "{}");
+				writeConfigurationText(String(payload.configuration ?? ""), {
+					configPath: configuration.configPath,
+				});
+				return jsonResponse({saved: true});
+			} catch (error) {
+				return jsonResponse({error: error.message}, 400);
+			}
+		}
+
+		return staticFileResponse(requestPath, "/assets/", assetsDirectory) ??
+			staticFileResponse(requestPath, "/support/client/", supportClientDirectory) ??
+			nodeModulesResponse(requestPath, projectRoot) ??
+			renderPage({configuration});
+	};
+}
+
+function isMain() {
+	return process.argv[1] === fileURLToPath(import.meta.url);
+}
+
+if (isMain()) {
+	Application.open(createConfigurationEditorApp());
+}

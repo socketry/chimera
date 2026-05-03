@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>Chimera Bookmarks</title>
+		<title>Chimera Configuration</title>
 		<script type="importmap">{{{importMapJson}}}</script>
 		<style>
 			:root {
@@ -101,6 +101,19 @@
 				font-size: 13px;
 			}
 
+			fieldset {
+				margin: 0 0 16px;
+				padding: 16px;
+				border: 1px solid var(--border);
+				border-radius: 12px;
+			}
+
+			legend {
+				padding: 0 8px;
+				color: var(--accent);
+				font-weight: 700;
+			}
+
 			label {
 				display: grid;
 				gap: 5px;
@@ -109,6 +122,17 @@
 				font-weight: 700;
 				text-transform: uppercase;
 				letter-spacing: 0.06em;
+			}
+
+			label.checkbox {
+				display: flex;
+				gap: 8px;
+				align-items: center;
+				min-height: 40px;
+			}
+
+			label.checkbox input {
+				width: auto;
 			}
 
 			input,
@@ -129,7 +153,7 @@
 
 			textarea {
 				width: 100%;
-				min-height: 220px;
+				min-height: 260px;
 				resize: vertical;
 				padding: 14px;
 				font: 13px/1.55 "SFMono-Regular", Consolas, monospace;
@@ -176,139 +200,10 @@
 				}
 			}
 
-			.toolbar,
-			.item-actions {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 10px;
-			}
-
-			.toolbar {
-				margin-bottom: 14px;
-			}
-
-			.bookmark-list {
-				display: grid;
-				gap: 12px;
-			}
-
-			.bookmark-row {
-				display: grid;
-			}
-
-			.bookmark-row[data-depth="1"] {
-				margin-left: 18px;
-			}
-
-			.bookmark-card {
-				display: grid;
-				gap: 0;
-				padding: 0;
-				border: 1px solid var(--border);
-				border-radius: 12px;
-				background: color-mix(in srgb, var(--control) 80%, transparent);
-				overflow: hidden;
-			}
-
-			.bookmark-summary {
-				display: grid;
-				grid-template-columns: minmax(0, 1fr) minmax(0, auto);
-				gap: 10px;
-				align-items: center;
-				padding: 10px 12px;
-			}
-
-			.bookmark-title-button {
-				display: grid;
-				grid-template-columns: auto minmax(0, 1fr) auto;
-				gap: 8px;
-				align-items: center;
-				padding: 0;
-				border: 0;
-				background: transparent;
-				text-align: left;
-			}
-
-			.disclosure-icon {
-				color: var(--accent);
-			}
-
-			.bookmark-title {
-				overflow: hidden;
-				text-overflow: ellipsis;
-				white-space: nowrap;
-			}
-
-			.bookmark-type {
-				color: var(--muted);
-				font-size: 12px;
-				text-transform: uppercase;
-				letter-spacing: 0.06em;
-			}
-
-			.bookmark-actions {
-				display: flex;
-				gap: 6px;
-				align-items: center;
-				justify-content: end;
-				min-width: 0;
-			}
-
-			.icon-button {
-				width: 32px;
-				min-height: 32px;
-				padding: 0;
-			}
-
-			.bookmark-body {
-				display: grid;
-				gap: 12px;
-				padding: 0 14px 14px;
-			}
-
-			.bookmark-heading,
-			.field-grid {
+			.grid {
 				display: grid;
 				grid-template-columns: repeat(2, minmax(0, 1fr));
-				gap: 10px;
-			}
-
-			.bookmark-heading {
-				grid-template-columns: minmax(0, 1fr) 170px;
-				align-items: end;
-			}
-
-			.separator-preview,
-			.empty {
-				padding: 10px 12px;
-				border: 1px dashed var(--border);
-				border-radius: 8px;
-				color: var(--muted);
-			}
-
-			.move-select {
-				width: auto;
-				min-width: 150px;
-				max-width: 240px;
-				padding: 8px 10px;
-			}
-
-			@media (max-width: 680px) {
-				header {
-					grid-template-columns: minmax(0, 1fr);
-				}
-
-				.header-actions {
-					justify-content: start;
-				}
-
-				.bookmark-summary {
-					grid-template-columns: minmax(0, 1fr);
-				}
-
-				.bookmark-actions {
-					justify-content: start;
-				}
+				gap: 12px;
 			}
 
 			details {
@@ -342,11 +237,25 @@
 				text-overflow: ellipsis;
 				white-space: nowrap;
 			}
+
+			@media (max-width: 680px) {
+				header {
+					grid-template-columns: minmax(0, 1fr);
+				}
+
+				.header-actions {
+					justify-content: start;
+				}
+
+				.grid {
+					grid-template-columns: minmax(0, 1fr);
+				}
+			}
 		</style>
 	</head>
 	<body>
 		<main id="app"></main>
 		<script id="initial-data" type="application/json">{{{initialDataJson}}}</script>
-		<script type="module" src="/assets/chimera-bookmarks-editor.js"></script>
+		<script type="module" src="/assets/chimera-configuration-editor.js"></script>
 	</body>
 </html>

@@ -1,4 +1,5 @@
 export const CHIMERA_BOOKMARKS_REFRESH_PATH = "/.well-known/chimera/bookmarks/refresh";
+export const CHIMERA_CONFIGURATION_REFRESH_PATH = "/.well-known/chimera/configuration/refresh";
 
 export class WellKnownController {
 	constructor(delegate) {
@@ -7,6 +8,10 @@ export class WellKnownController {
 			[CHIMERA_BOOKMARKS_REFRESH_PATH, {
 				methods: new Set(["POST"]),
 				handle: this.handleBookmarksRefresh.bind(this),
+			}],
+			[CHIMERA_CONFIGURATION_REFRESH_PATH, {
+				methods: new Set(["POST"]),
+				handle: this.handleConfigurationRefresh.bind(this),
 			}],
 		]);
 	}
@@ -27,6 +32,11 @@ export class WellKnownController {
 
 	handleBookmarksRefresh() {
 		this.delegate?.wellKnownControllerDidRequestBookmarksRefresh?.(this);
+		return new Response(null, {status: 204});
+	}
+
+	handleConfigurationRefresh() {
+		this.delegate?.wellKnownControllerDidRequestConfigurationRefresh?.(this);
 		return new Response(null, {status: 204});
 	}
 
