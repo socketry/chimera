@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.4.0
 
   - Upgrade to `@socketry/htty` v0.4.0 and stream forwarded session requests without buffering subresources.
   - Show updates in a dedicated window with download progress and a restart button, with configurable automatic update checks.
