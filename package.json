@@ -17,7 +17,7 @@
 		"build-release-notes": "node scripts/build-release-notes.mjs",
 		"generate-icons": "node scripts/generate-icons.cjs",
 		"test": "node --test",
-		"test:e2e": "node --test test/Chimera.js"
+		"test:e2e": "node --test test/Chimera/Application.js"
 	},
 	"dependencies": {
 		"@socketry/htty": "^0.2.2",

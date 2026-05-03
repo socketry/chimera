@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {renderReleaseNotesHtml} from "../scripts/build-release-notes.mjs";
+import {renderReleaseNotesHtml} from "../../scripts/build-release-notes.mjs";
 
 test("renders release notes as a complete html document", () => {
 	const html = renderReleaseNotesHtml("# Releases\n\n- <safe>\n");

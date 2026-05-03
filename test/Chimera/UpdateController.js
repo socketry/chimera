@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import {EventEmitter} from "node:events";
 import test from "node:test";
 
-import {UpdateController} from "../Chimera/UpdateController.js";
+import {UpdateController} from "../../Chimera/UpdateController.js";
 
 class FakeUpdater extends EventEmitter {
 	constructor() {

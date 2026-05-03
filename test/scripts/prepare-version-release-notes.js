@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {prepareReleaseNotes, releaseHeading} from "../scripts/prepare-version-release-notes.mjs";
+import {prepareReleaseNotes, releaseHeading} from "../../scripts/prepare-version-release-notes.mjs";
 
 test("formats release headings with a v prefix", () => {
 	assert.equal(releaseHeading("0.2.2"), "## v0.2.2");

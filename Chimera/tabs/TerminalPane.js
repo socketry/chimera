@@ -1,8 +1,12 @@
 import {FitAddon} from "../../node_modules/@xterm/addon-fit/lib/addon-fit.mjs";
 import {Terminal} from "../../node_modules/@xterm/xterm/lib/xterm.mjs";
 
-import {installHttyBootstrapHandler} from "../HTTYBootstrap.js";
 import {Pane} from "./Pane.js";
+
+const HTTY_BOOTSTRAP_IDENTIFIER = Object.freeze({
+	intermediates: "+",
+	final: "H",
+});
 
 class TerminalSessionMode {
 	constructor() {
@@ -63,6 +67,23 @@ function terminalTheme() {
 		cursor: cssVariable("--xterm-cursor") || "#f6d365",
 		selectionBackground: cssVariable("--xterm-selection-bg") || "rgba(246, 211, 101, 0.25)",
 	};
+}
+
+export function decodeHttyBootstrap(data) {
+	const normalizedMode = String(data ?? "").trim().toLowerCase();
+	return normalizedMode === "raw" ? {mode: "raw"} : null;
+}
+
+export function installHttyBootstrapHandler(terminal, onBootstrap) {
+	return terminal.parser.registerDcsHandler(HTTY_BOOTSTRAP_IDENTIFIER, (data) => {
+		const bootstrap = decodeHttyBootstrap(data);
+		if (!bootstrap) {
+			return false;
+		}
+
+		onBootstrap?.(bootstrap);
+		return true;
+	});
 }
 
 export class TerminalPane extends Pane {

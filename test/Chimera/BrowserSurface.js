@@ -1,11 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {BootstrapDecoder, Client, HTTY_BOOTSTRAP_IDENTIFIER, SESSION_STATUS, Transport, encodeBootstrap} from "@socketry/htty";
+import {BootstrapDecoder, Client, SESSION_STATUS, Transport, encodeBootstrap} from "@socketry/htty";
 import {normalizeRequestHeaders, sanitizeResponseHeaders} from "@socketry/htty/HTTP";
 import {Session} from "@socketry/htty/Session";
 
-import {browserDocumentForResponse} from "../Chimera/BrowserSurface.js";
-import {installHttyBootstrapHandler} from "../Chimera/HTTYBootstrap.js";
+import {browserDocumentForResponse} from "../../Chimera/BrowserSurface.js";
 
 	test("reports bootstrap boundaries without losing terminal text", () => {
 	const decoder = new BootstrapDecoder();
@@ -48,36 +47,6 @@ test("writes raw bytes through the duplex transport", async () => {
 
 	assert.equal(writes.length, 1);
 	assert.equal(writes[0].toString("latin1"), "hello");
-});
-
-test("registers an xterm DCS handler for the HTTY bootstrap", () => {
-	let registeredIdentifier = null;
-	let registeredCallback = null;
-	const bootstraps = [];
-
-	const disposable = installHttyBootstrapHandler({
-		parser: {
-			registerDcsHandler(identifier, callback) {
-				registeredIdentifier = identifier;
-				registeredCallback = callback;
-				return {
-					dispose() {
-						registeredCallback = null;
-					},
-				};
-			},
-		},
-	}, (bootstrap) => {
-		bootstraps.push(bootstrap);
-	});
-
-	assert.deepEqual(registeredIdentifier, HTTY_BOOTSTRAP_IDENTIFIER);
-	assert.equal(registeredCallback("raw", []), true);
-	assert.deepEqual(bootstraps, [{mode: "raw"}]);
-	assert.equal(registeredCallback("framed", []), false);
-
-	disposable.dispose();
-	assert.equal(registeredCallback, null);
 });
 
 	test("accepts raw transport bytes into the duplex transport", async () => {

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import test from "node:test";
 
-import {resolveSessionCwd} from "../Chimera/SessionDefaults.js";
+import {resolveSessionCwd} from "../../Chimera/SessionDefaults.js";
 
 test("defaults shell sessions to the user's home directory", () => {
 	assert.equal(resolveSessionCwd(), os.homedir() || process.cwd());

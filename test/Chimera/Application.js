@@ -7,7 +7,7 @@ import {_electron as electron} from "playwright";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const projectRoot = path.resolve(__dirname, "..");
+const projectRoot = path.resolve(__dirname, "..", "..");
 const configPath = path.join(__dirname, "config.json");
 const primaryModifier = process.platform === "darwin" ? "Meta" : "Control";
 const shellCommand = process.env.SHELL || "/bin/zsh";
