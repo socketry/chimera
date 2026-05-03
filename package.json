@@ -25,6 +25,7 @@
 		"@xterm/addon-webgl": "^0.19.0",
 		"@xterm/xterm": "^6.0.0",
 		"electron-updater": "^6.8.3",
+		"lit": "^3.3.2",
 		"node-pty": "1.2.0-beta.12"
 	},
 	"devDependencies": {
@@ -40,10 +41,23 @@
 			"output": "release"
 		},
 		"files": [
+			"bin/**/*",
 			"Chimera/**/*",
 			"help/**/*",
 			"Chimera.js",
 			"package.json"
+		],
+		"asarUnpack": [
+			"bin/**/*",
+			"Chimera/BookmarksController.js",
+			"Chimera/Configuration.js",
+			"node_modules/@lit-labs/ssr-dom-shim/**/*",
+			"node_modules/@lit/reactive-element/**/*",
+			"node_modules/@socketry/htty/**/*",
+			"node_modules/@types/trusted-types/**/*",
+			"node_modules/lit/**/*",
+			"node_modules/lit-element/**/*",
+			"node_modules/lit-html/**/*"
 		],
 		"mac": {
 			"category": "public.app-category.developer-tools",

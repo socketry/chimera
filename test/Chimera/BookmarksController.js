@@ -14,21 +14,42 @@ function createConfigurationDirectory() {
 	return {directory, configPath};
 }
 
-test("resolves bookmarks relative to the configuration file", () => {
+test("resolves bookmarks.json relative to the configuration file", () => {
 	const {directory, configPath} = createConfigurationDirectory();
 	const configuration = new Configuration({configPath});
 
-	assert.equal(configuration.bookmarksDirectory(), path.join(directory, "bookmarks"));
+	assert.equal(configuration.bookmarksPath(), path.join(directory, "bookmarks.json"));
 });
 
-test("loads bookmark scripts from the bookmarks directory", () => {
+test("loads bookmarks from bookmarks.json in document order", () => {
 	const {directory, configPath} = createConfigurationDirectory();
-	const bookmarksDirectory = path.join(directory, "bookmarks");
-	fs.mkdirSync(bookmarksDirectory);
-	fs.writeFileSync(path.join(bookmarksDirectory, "zebra"), "#!/usr/bin/env sh\n");
-	fs.writeFileSync(path.join(bookmarksDirectory, "alpha.sh"), "#!/usr/bin/env sh\n");
-	fs.writeFileSync(path.join(bookmarksDirectory, ".hidden"), "#!/usr/bin/env sh\n");
-	fs.mkdirSync(path.join(bookmarksDirectory, "folder"));
+	fs.mkdirSync(path.join(directory, "project"));
+	fs.writeFileSync(path.join(directory, "bookmarks.json"), JSON.stringify([
+		{
+			title: "Production",
+			command: "ssh",
+			args: ["prod"],
+		},
+		{
+			type: "separator",
+		},
+		{
+			title: "Project Shell",
+			command: "/bin/zsh",
+			args: ["-lc", "exec $SHELL"],
+			cwd: "project",
+		},
+		{
+			title: "Servers",
+			items: [
+				{
+					title: "Staging",
+					command: "ssh",
+					args: ["staging"],
+				},
+			],
+		},
+	]));
 
 	const controller = new BookmarksController({
 		configuration: new Configuration({configPath}),
@@ -36,23 +57,63 @@ test("loads bookmark scripts from the bookmarks directory", () => {
 
 	assert.deepEqual(controller.bookmarks(), [
 		{
-			title: "alpha",
-			path: path.join(bookmarksDirectory, "alpha.sh"),
-			cwd: bookmarksDirectory,
+			type: "command",
+			title: "Production",
+			command: "ssh",
+			args: ["prod"],
+			cwd: undefined,
 		},
 		{
-			title: "zebra",
-			path: path.join(bookmarksDirectory, "zebra"),
-			cwd: bookmarksDirectory,
+			type: "separator",
+		},
+		{
+			type: "command",
+			title: "Project Shell",
+			command: "/bin/zsh",
+			args: ["-lc", "exec $SHELL"],
+			cwd: path.join(directory, "project"),
+		},
+		{
+			type: "group",
+			title: "Servers",
+			items: [
+				{
+					type: "command",
+					title: "Staging",
+					command: "ssh",
+					args: ["staging"],
+					cwd: undefined,
+				},
+			],
 		},
 	]);
 });
 
-test("returns no bookmarks when the bookmarks directory is missing", () => {
+test("returns no bookmarks when bookmarks.json is missing", () => {
 	const {configPath} = createConfigurationDirectory();
 	const controller = new BookmarksController({
 		configuration: new Configuration({configPath}),
 	});
 
 	assert.deepEqual(controller.bookmarks(), []);
+});
+
+test("returns no bookmarks when bookmarks.json is invalid", () => {
+	const {directory, configPath} = createConfigurationDirectory();
+	const events = [];
+	fs.writeFileSync(path.join(directory, "bookmarks.json"), JSON.stringify([
+		{
+			title: "Broken",
+			args: ["missing-command"],
+		},
+	]));
+
+	const controller = new BookmarksController({
+		configuration: new Configuration({configPath}),
+		trace: (event, details) => events.push({event, details}),
+	});
+
+	assert.deepEqual(controller.bookmarks(), []);
+	assert.equal(events[0]?.event, "bookmarks:load-failed");
+	assert.match(events[0]?.details.message, /requires a command/);
 });

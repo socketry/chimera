@@ -380,6 +380,11 @@ export class WindowController {
 		return true;
 	}
 
+	showActiveSurfaceDeveloperTools() {
+		const surface = this.activeSurfaceId ? this.surfaces.get(this.activeSurfaceId) : null;
+		return surface?.showDeveloperTools() ?? false;
+	}
+
 	closeSession(sessionId) {
 		const session = this.sessions.get(sessionId);
 		this.trace("closeSession:start", {

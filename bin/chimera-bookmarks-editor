@@ -1,0 +1,104 @@
+#!/usr/bin/env node
+
+import fs from "node:fs";
+import path from "node:path";
+import {fileURLToPath} from "node:url";
+
+import {Application} from "@socketry/htty";
+
+import {BookmarksController} from "../Chimera/BookmarksController.js";
+import {Configuration} from "../Chimera/Configuration.js";
+import {
+	dirnameFromMeta,
+	htmlResponse,
+	jsonResponse,
+	litImportMap,
+	nodeModulesResponse,
+	renderTemplateFile,
+	scriptJson,
+	staticFileResponse,
+} from "./support/HTTYToolServer.js";
+
+const here = dirnameFromMeta(import.meta.url);
+const projectRoot = path.dirname(here);
+const assetsDirectory = path.join(here, "assets");
+const supportClientDirectory = path.join(here, "support", "client");
+const templatePath = path.join(assetsDirectory, "chimera-bookmarks-editor.html");
+
+const EXAMPLE_BOOKMARKS = [
+	{
+		title: "My Server",
+		command: "ssh",
+		args: ["my-server"],
+	},
+	{
+		type: "separator",
+	},
+	{
+		title: "Projects",
+		items: [
+			{
+				title: "Chimera",
+				command: "/bin/zsh",
+				args: ["-lc", "exec $SHELL"],
+				cwd: "projects/chimera",
+			},
+		],
+	},
+];
+
+export function readBookmarksText(bookmarksPath) {
+	if (!fs.existsSync(bookmarksPath)) {
+		return "[]\n";
+	}
+
+	return fs.readFileSync(bookmarksPath, "utf8");
+}
+
+export function writeBookmarksText(text, {bookmarksPath, bookmarksController}) {
+	const parsed = JSON.parse(text || "[]");
+	bookmarksController.normalizeItems(parsed);
+	fs.mkdirSync(path.dirname(bookmarksPath), {recursive: true});
+	fs.writeFileSync(bookmarksPath, `${JSON.stringify(parsed, null, "\t")}\n`);
+}
+
+export function renderPage({bookmarksPath}) {
+	return htmlResponse(renderTemplateFile(templatePath, {
+		importMapJson: scriptJson(litImportMap()),
+		initialDataJson: scriptJson({
+			bookmarksPath,
+			bookmarksText: readBookmarksText(bookmarksPath),
+			exampleBookmarks: EXAMPLE_BOOKMARKS,
+		}),
+	}));
+}
+
+export function createBookmarksEditorApp({configuration = new Configuration()} = {}) {
+	const bookmarksPath = configuration.bookmarksPath();
+	const bookmarksController = new BookmarksController({configuration});
+
+	return ({method, path: requestPath, body}) => {
+		if (method === "POST" && requestPath === "/save") {
+			try {
+				const payload = JSON.parse(body || "{}");
+				writeBookmarksText(String(payload.bookmarks ?? ""), {bookmarksPath, bookmarksController});
+				return jsonResponse({saved: true});
+			} catch (error) {
+				return jsonResponse({error: error.message}, 400);
+			}
+		}
+
+		return staticFileResponse(requestPath, "/assets/", assetsDirectory) ??
+			staticFileResponse(requestPath, "/support/client/", supportClientDirectory) ??
+			nodeModulesResponse(requestPath, projectRoot) ??
+			renderPage({bookmarksPath});
+	};
+}
+
+function isMain() {
+	return process.argv[1] === fileURLToPath(import.meta.url);
+}
+
+if (isMain()) {
+	Application.open(createBookmarksEditorApp());
+}

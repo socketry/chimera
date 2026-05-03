@@ -100,19 +100,23 @@ export class SurfaceController {
 				headers,
 				body,
 			});
-			const document = browserDocumentForResponse(response);
 			const isDocumentRequest = request.destination === "document" || request.mode === "navigate";
 
 			if (isDocumentRequest) {
+				const document = browserDocumentForResponse(response);
 				this.sessionController.handleSurfaceDocument(this, requestPath, response, document);
+				return new Response(document.body, {
+					status: response.status,
+					headers: {
+						...response.headers,
+						"content-type": document.contentType,
+					},
+				});
 			}
 
-			return new Response(document.body, {
+			return new Response(response.body, {
 				status: response.status,
-				headers: {
-					...response.headers,
-					"content-type": document.contentType,
-				},
+				headers: response.headers,
 			});
 		} catch (error) {
 			this.sessionController.handleSurfaceRequestError(error);
@@ -152,6 +156,15 @@ export class SurfaceController {
 			title: this.view.webContents.getTitle(),
 			textContent: await this.view.webContents.executeJavaScript("document.body.innerText"),
 		};
+	}
+
+	showDeveloperTools() {
+		if (!this.view?.webContents || this.view.webContents.isDestroyed()) {
+			return false;
+		}
+
+		this.view.webContents.openDevTools({mode: "detach"});
+		return true;
 	}
 
 	close() {

@@ -108,29 +108,51 @@
 	<body>
 		<main>
 			<h1>Bookmarks</h1>
-			<p>Bookmarks are executable scripts stored in a <code>bookmarks</code> directory next to your Chimera configuration file. Each script appears in the Bookmarks menu using its file name.</p>
+			<p>Bookmarks are menu entries defined in <code>bookmarks.json</code> next to your Chimera configuration file. Entries can launch commands, create separators, and group related commands into submenus.</p>
 
 			<h2>Location</h2>
 			<p>If your configuration file is <code>~/.local/state/chimera.json</code>, bookmarks are loaded from:</p>
-			<pre><code>~/.local/state/bookmarks/</code></pre>
+			<pre><code>~/.local/state/bookmarks.json</code></pre>
 
 			<h2>Example</h2>
-			<p>Create an executable file such as <code>my-server</code>:</p>
-			<pre><code>#!/usr/bin/env sh
-exec ssh my-server</code></pre>
+			<p>Create <code>bookmarks.json</code> with entries like this:</p>
+			<pre><code>[
+  {
+    "title": "My Server",
+    "command": "ssh",
+    "args": ["my-server"]
+  },
+  {
+    "type": "separator"
+  },
+  {
+    "title": "Projects",
+    "items": [
+      {
+        "title": "Chimera",
+        "command": "/bin/zsh",
+        "args": ["-lc", "exec $SHELL"],
+        "cwd": "projects/chimera"
+      }
+    ]
+  }
+]</code></pre>
 
-			<p>Then make it executable:</p>
-			<pre><code>chmod +x ~/.local/state/bookmarks/my-server</code></pre>
+			<h2>Editor</h2>
+			<p>Use Bookmarks > Edit Bookmarks to open the bundled HTTY editor, or run it directly:</p>
+			<pre><code>bin/chimera-bookmarks-editor</code></pre>
 
 			<h2>Menu Behavior</h2>
 			<ul>
-				<li>Hidden files and directories are ignored.</li>
-				<li>Bookmarks are sorted by file name.</li>
-				<li>The menu title is the file name without its final extension.</li>
-				<li>Use Bookmarks > Refresh after adding, removing, or renaming scripts.</li>
+				<li>Entries appear in the same order as the JSON array.</li>
+				<li>Use <code>{"type": "separator"}</code> to insert a menu separator.</li>
+				<li>Use <code>items</code> to create a submenu.</li>
+				<li><code>args</code> defaults to an empty array.</li>
+				<li>Relative <code>cwd</code> values are resolved next to the Chimera configuration file.</li>
+				<li>Use Bookmarks > Refresh after editing <code>bookmarks.json</code>.</li>
 			</ul>
 
-			<p class="muted">Bookmarks run as terminal sessions, so scripts can launch SSH, local commands, or small project workflows.</p>
+			<p class="muted">Bookmarks run as terminal sessions, so they can launch SSH, local commands, or small project workflows.</p>
 		</main>
 	</body>
 </html>

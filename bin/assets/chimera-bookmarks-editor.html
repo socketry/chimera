@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Chimera Bookmarks</title>
+		<script type="importmap">{{{importMapJson}}}</script>
+		<style>
+			:root {
+				color-scheme: light dark;
+				--bg: #07111f;
+				--panel: rgba(8, 14, 24, 0.84);
+				--text: #eef6ff;
+				--muted: #9fb0c8;
+				--accent: #7dd3fc;
+				--danger: #fca5a5;
+				--success: #86efac;
+				--border: rgba(148, 163, 184, 0.18);
+				--control: rgba(5, 11, 21, 0.76);
+			}
+
+			@media (prefers-color-scheme: light) {
+				:root {
+					--bg: #eef3f8;
+					--panel: rgba(255, 255, 255, 0.86);
+					--text: #0f172a;
+					--muted: #64748b;
+					--accent: #0369a1;
+					--danger: #b91c1c;
+					--success: #047857;
+					--border: rgba(15, 23, 42, 0.14);
+					--control: rgba(255, 255, 255, 0.94);
+				}
+			}
+
+			* {
+				box-sizing: border-box;
+			}
+
+			body {
+				margin: 0;
+				min-height: 100vh;
+				padding: 28px;
+				background: var(--bg);
+				color: var(--text);
+				font: 15px/1.45 "Avenir Next", "Helvetica Neue", sans-serif;
+			}
+
+			main {
+				max-width: 960px;
+				margin: 0 auto;
+				display: grid;
+				gap: 18px;
+			}
+
+			header,
+			form,
+			.notice {
+				border: 1px solid var(--border);
+				border-radius: 18px;
+				background: var(--panel);
+				box-shadow: 0 18px 60px rgba(0, 0, 0, 0.18);
+				padding: 22px 24px;
+			}
+
+			h1,
+			p {
+				margin: 0;
+			}
+
+			h1 {
+				font-size: clamp(28px, 5vw, 42px);
+			}
+
+			p {
+				color: var(--muted);
+			}
+
+			code {
+				font-family: "SFMono-Regular", Consolas, monospace;
+				font-size: 13px;
+			}
+
+			label {
+				display: grid;
+				gap: 5px;
+				color: var(--muted);
+				font-size: 12px;
+				font-weight: 700;
+				text-transform: uppercase;
+				letter-spacing: 0.06em;
+			}
+
+			input,
+			select,
+			textarea {
+				border: 1px solid var(--border);
+				border-radius: 8px;
+				background: var(--control);
+				color: var(--text);
+				font: 14px/1.4 "Avenir Next", "Helvetica Neue", sans-serif;
+			}
+
+			input,
+			select {
+				width: 100%;
+				padding: 9px 10px;
+			}
+
+			textarea {
+				width: 100%;
+				min-height: 220px;
+				resize: vertical;
+				padding: 14px;
+				font: 13px/1.55 "SFMono-Regular", Consolas, monospace;
+				tab-size: 2;
+			}
+
+			button {
+				padding: 9px 13px;
+				border: 1px solid color-mix(in srgb, var(--accent) 48%, var(--border));
+				border-radius: 8px;
+				background: color-mix(in srgb, var(--accent) 16%, var(--control));
+				color: var(--text);
+				font: inherit;
+				cursor: pointer;
+			}
+
+			.toolbar,
+			.actions,
+			.item-actions {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 10px;
+			}
+
+			.toolbar {
+				margin-bottom: 14px;
+			}
+
+			.actions {
+				margin-top: 14px;
+			}
+
+			.bookmark-list {
+				display: grid;
+				gap: 12px;
+			}
+
+			.bookmark-card {
+				display: grid;
+				gap: 12px;
+				padding: 14px;
+				border: 1px solid var(--border);
+				border-radius: 12px;
+				background: color-mix(in srgb, var(--control) 80%, transparent);
+			}
+
+			.bookmark-card[data-depth="1"] {
+				margin-left: 18px;
+			}
+
+			.bookmark-heading,
+			.field-grid {
+				display: grid;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				gap: 10px;
+			}
+
+			.bookmark-heading {
+				grid-template-columns: minmax(0, 1fr) 170px;
+				align-items: end;
+			}
+
+			.separator-preview,
+			.empty {
+				padding: 10px 12px;
+				border: 1px dashed var(--border);
+				border-radius: 8px;
+				color: var(--muted);
+			}
+
+			details {
+				margin-top: 16px;
+			}
+
+			summary {
+				cursor: pointer;
+				color: var(--accent);
+				font-weight: 700;
+			}
+
+			.notice[data-kind="success"] {
+				color: var(--success);
+			}
+
+			.notice[data-kind="error"] {
+				color: var(--danger);
+			}
+
+			.notice[hidden] {
+				display: none;
+			}
+		</style>
+	</head>
+	<body>
+		<main id="app"></main>
+		<script id="initial-data" type="application/json">{{{initialDataJson}}}</script>
+		<script type="module" src="/assets/chimera-bookmarks-editor.js"></script>
+	</body>
+</html>

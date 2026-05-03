@@ -115,7 +115,7 @@ export class Configuration {
 		return fs.readFileSync(stylesheetPath, "utf8");
 	}
 
-	bookmarksDirectory() {
-		return path.join(this.configurationDirectory(), "bookmarks");
+	bookmarksPath() {
+		return path.join(this.configurationDirectory(), "bookmarks.json");
 	}
 }

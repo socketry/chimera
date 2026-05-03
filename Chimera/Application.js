@@ -82,10 +82,21 @@ export class ChimeraApplication {
 		controller.emitToRenderer("chimera:show-bookmarks-help");
 	}
 
+	async editBookmarks() {
+		const controller = this.focusedWindowController() ?? Array.from(this.windowControllers.values())[0] ?? await this.createWindow();
+		const editorPath = this.bookmarksEditorPath();
+		const command = this.shellCommandForScript(editorPath);
+		controller.window?.focus();
+		controller.createSession(process.env.SHELL || "/bin/zsh", ["-lc", command], {
+			cwd: path.dirname(editorPath),
+			title: "Edit Bookmarks",
+		});
+	}
+
 	async openBookmark(bookmark) {
 		const controller = this.focusedWindowController() ?? Array.from(this.windowControllers.values())[0] ?? await this.createWindow();
 		controller.window?.focus();
-		controller.createSession(bookmark.path, [], {
+		controller.createSession(bookmark.command, bookmark.args, {
 			cwd: bookmark.cwd,
 			title: bookmark.title,
 		});
@@ -132,6 +143,26 @@ export class ChimeraApplication {
 		return browserWindow ? this.windowControllers.get(browserWindow.id) ?? null : null;
 	}
 
+	applicationRoot() {
+		return path.dirname(__dirname);
+	}
+
+	bookmarksEditorPath() {
+		if (app.isPackaged) {
+			return path.join(process.resourcesPath, "app.asar.unpacked", "bin", "chimera-bookmarks-editor");
+		}
+
+		return path.join(this.applicationRoot(), "bin", "chimera-bookmarks-editor");
+	}
+
+	shellQuote(value) {
+		return `'${String(value).replaceAll("'", "'\\''")}'`;
+	}
+
+	shellCommandForScript(scriptPath) {
+		return `exec ${this.shellQuote(scriptPath)}`;
+	}
+
 	focusedWindowController() {
 		const browserWindow = BrowserWindow.getFocusedWindow();
 		return browserWindow ? this.windowControllers.get(browserWindow.id) ?? null : null;
@@ -139,6 +170,7 @@ export class ChimeraApplication {
 
 	buildApplicationMenu() {
 		const bookmarks = this.bookmarksController.bookmarks();
+		const bookmarkMenuItems = this.bookmarkMenuItems(bookmarks);
 		const template = [
 			...(process.platform === "darwin" ? [{role: "appMenu"}] : []),
 			{
@@ -184,12 +216,7 @@ export class ChimeraApplication {
 			{
 				label: "Bookmarks",
 				submenu: [
-					...(bookmarks.length > 0 ? bookmarks.map((bookmark) => ({
-						label: bookmark.title,
-						click: () => {
-							void this.openBookmark(bookmark);
-						},
-					})) : [
+					...(bookmarkMenuItems.length > 0 ? bookmarkMenuItems : [
 						{
 							label: "No Bookmarks",
 							enabled: false,
@@ -197,9 +224,9 @@ export class ChimeraApplication {
 					]),
 					{type: "separator"},
 					{
-						label: "Help",
+						label: "Edit Bookmarks",
 						click: () => {
-							void this.showBookmarksHelp();
+							void this.editBookmarks();
 						},
 					},
 					{
@@ -229,6 +256,12 @@ export class ChimeraApplication {
 					{role: "reload"},
 					{role: "forceReload"},
 					{role: "toggleDevTools"},
+					{
+						label: "Inspect Active Web View",
+						click: () => {
+							this.focusedWindowController()?.showActiveSurfaceDeveloperTools();
+						},
+					},
 				],
 			},
 			{role: "windowMenu"},
@@ -258,6 +291,34 @@ export class ChimeraApplication {
 		];
 
 		Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+	}
+
+	bookmarkMenuItems(bookmarks) {
+		return bookmarks.map((bookmark) => this.bookmarkMenuItem(bookmark)).filter(Boolean);
+	}
+
+	bookmarkMenuItem(bookmark) {
+		if (bookmark.type === "separator") {
+			return {type: "separator"};
+		}
+
+		if (bookmark.type === "group") {
+			return {
+				label: bookmark.title,
+				submenu: this.bookmarkMenuItems(bookmark.items),
+			};
+		}
+
+		if (bookmark.type === "command") {
+			return {
+				label: bookmark.title,
+				click: () => {
+					void this.openBookmark(bookmark);
+				},
+			};
+		}
+
+		return null;
 	}
 
 	registerIpcHandlers() {
