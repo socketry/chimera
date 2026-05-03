@@ -32,7 +32,7 @@ npm start
 
 ## Configuration
 
-Chimera reads JSON configuration from `~/.local/state/chimera.json` by default. You can override the path with `CHIMERA_CONFIG_PATH` and select a profile with `CHIMERA_CONFIG_PROFILE`.
+Chimera reads JSON configuration from `~/.local/state/chimera/configuration.json` by default. You can override the path with `CHIMERA_CONFIG_PATH` and select a profile with `CHIMERA_CONFIG_PROFILE`.
 
 The built-in UI follows the operating system light/dark preference automatically. To override the theme, provide a stylesheet path:
 
@@ -46,11 +46,16 @@ The built-in UI follows the operating system light/dark preference automatically
 	},
 	"theme": {
 		"stylesheet": "theme.css"
+	},
+	"updates": {
+		"enabled": true,
+		"autoCheck": true,
+		"recheckIntervalHours": 24
 	}
 }
 ```
 
-Relative stylesheet paths are resolved from the directory containing the configuration file. The custom stylesheet is loaded after Chimera's default stylesheet, so it can override the default CSS variables such as `--terminal-bg`, `--text`, `--muted`, `--accent`, and `--xterm-bg`. Terminal options are passed to xterm.js when each terminal is created.
+Relative stylesheet paths are resolved from the directory containing the configuration file. The custom stylesheet is loaded after Chimera's default stylesheet, so it can override the default CSS variables such as `--terminal-bg`, `--text`, `--muted`, `--accent`, and `--xterm-bg`. Terminal options are passed to xterm.js when each terminal is created. Update options control whether packaged builds use the updater and whether Chimera checks automatically at startup and on the configured interval.
 
 Run the HTTY-focused unit tests:
 

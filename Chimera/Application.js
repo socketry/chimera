@@ -26,7 +26,9 @@ export class ChimeraApplication {
 		this.preloadPath = path.join(__dirname, "preload.cjs");
 		this.updateController = new UpdateController({
 			app,
+			BrowserWindow,
 			dialog,
+			options: this.configuration.updateOptions(),
 			trace: this.trace.bind(this),
 		});
 	}

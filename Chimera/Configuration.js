@@ -21,6 +21,11 @@ const DEFAULT_CONFIGURATION = {
 		lineHeight: 1.0,
 		scrollback: 1000,
 	},
+	updates: {
+		enabled: true,
+		autoCheck: true,
+		recheckIntervalHours: 24,
+	},
 	profiles: {
 		e2e: {
 			window: {
@@ -89,6 +94,10 @@ export class Configuration {
 
 	terminalOptions() {
 		return mergeObjects(this.configuration.terminal ?? {}, this.profileConfiguration().terminal ?? {});
+	}
+
+	updateOptions() {
+		return mergeObjects(this.configuration.updates ?? {}, this.profileConfiguration().updates ?? {});
 	}
 
 	configurationDirectory() {

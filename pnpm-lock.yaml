@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@socketry/htty':
-        specifier: ^0.2.2
-        version: 0.2.2
+        specifier: ^0.4.0
+        version: 0.4.0
       '@xterm/addon-fit':
         specifier: ^0.11.0
         version: 0.11.0
@@ -108,8 +108,8 @@ packages:
     resolution: {integrity: sha512-t09vSN3MdfsyCHoFcTRCH/iUtG7OJ0CsjzB8cjAmKc/va/kIgeDI/TxsigdncE/4be734m0cvIYwNaV4i2XqAw==}
     engines: {node: '>=10'}
 
-  '@socketry/htty@0.2.2':
-    resolution: {integrity: sha512-dOemzVXVj08mD1kl/WVQ7PaWcL+AnjK8PsmbqT7b27DPr5jyoWcB8J+NZWruGvRRA+0RP8zRM1XAMCzc7Ep05A==}
+  '@socketry/htty@0.4.0':
+    resolution: {integrity: sha512-IdpLPHnBVKJy8hAznRd1GzWxx5tALR3DSp3KBUupuCvx7+eeEPFe/Lb5CEsCQIuHO0BnaiwfUbRtXz1VWSJKzw==}
 
   '@szmarczak/http-timer@4.0.6':
     resolution: {integrity: sha512-4BAffykYOgO+5nzBWYwE3W90sBgLJoUPRWWcL8wlyiM8IB8ipJz3UMJ9KXQd1RKQXpKp8Tutn80HZtWsu2u76w==}
@@ -1249,7 +1249,7 @@ snapshots:
 
   '@sindresorhus/is@4.6.0': {}
 
-  '@socketry/htty@0.2.2': {}
+  '@socketry/htty@0.4.0': {}
 
   '@szmarczak/http-timer@4.0.6':
     dependencies:

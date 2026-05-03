@@ -1,11 +1,15 @@
 export async function handleRequest(client, {path, request}) {
 	const method = (request.method || "GET").toUpperCase();
 	const headers = Object.fromEntries(request.headers.entries());
-	const body = method === "GET" || method === "HEAD" ? undefined : await request.text();
-	return client.request({
+	const hasRequestBody = method !== "GET" && method !== "HEAD";
+	const requestOptions = {
 		path,
 		method,
 		headers,
-		body,
+	};
+
+	return client.request({
+		...requestOptions,
+		body: hasRequestBody ? request.body : undefined,
 	});
 }

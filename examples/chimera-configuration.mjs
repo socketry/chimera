@@ -4,7 +4,7 @@ import path from "node:path";
 
 import {Application} from "@socketry/htty";
 
-const DEFAULT_CONFIG_PATH = path.join(os.homedir(), ".local", "state", "chimera.json");
+const DEFAULT_CONFIG_PATH = path.join(os.homedir(), ".local", "state", "chimera", "configuration.json");
 const configPath = process.env.CHIMERA_CONFIG_PATH || DEFAULT_CONFIG_PATH;
 
 const DEFAULT_CONFIGURATION = {
@@ -25,6 +25,11 @@ const DEFAULT_CONFIGURATION = {
 	},
 	theme: {
 		stylesheet: null,
+	},
+	updates: {
+		enabled: true,
+		autoCheck: true,
+		recheckIntervalHours: 24,
 	},
 };
 
@@ -87,6 +92,11 @@ function normalizeConfiguration(input) {
 		},
 		theme: {
 			stylesheet: input.theme?.stylesheet ? String(input.theme.stylesheet) : null,
+		},
+		updates: {
+			enabled: normalizeBoolean(input.updates?.enabled),
+			autoCheck: normalizeBoolean(input.updates?.autoCheck),
+			recheckIntervalHours: Math.max(0, numberOrDefault(input.updates?.recheckIntervalHours, DEFAULT_CONFIGURATION.updates.recheckIntervalHours)),
 		},
 	};
 }
@@ -329,6 +339,15 @@ function renderPage({saved = false, error = null} = {}) {
 					<legend>Theme</legend>
 					<label>Stylesheet Path <input name="theme.stylesheet" placeholder="theme.css or /absolute/path/theme.css"></label>
 				</fieldset>
+
+				<fieldset>
+					<legend>Updates</legend>
+					<div class="grid">
+						<label class="checkbox"><input name="updates.enabled" type="checkbox"> Enable updates</label>
+						<label class="checkbox"><input name="updates.autoCheck" type="checkbox"> Check automatically</label>
+						<label>Recheck Interval (hours) <input name="updates.recheckIntervalHours" type="number" min="0" step="1"></label>
+					</div>
+				</fieldset>
 				
 				<div class="actions">
 					<p>Custom theme paths are resolved relative to the configuration file.</p>
@@ -363,6 +382,9 @@ function renderPage({saved = false, error = null} = {}) {
 			setValue("terminal.lineHeight", configuration.terminal?.lineHeight);
 			setValue("terminal.scrollback", configuration.terminal?.scrollback);
 			setValue("theme.stylesheet", configuration.theme?.stylesheet);
+			setValue("updates.enabled", configuration.updates?.enabled);
+			setValue("updates.autoCheck", configuration.updates?.autoCheck);
+			setValue("updates.recheckIntervalHours", configuration.updates?.recheckIntervalHours);
 			
 			function formDataObject() {
 				const data = new FormData(form);
@@ -384,6 +406,11 @@ function renderPage({saved = false, error = null} = {}) {
 					},
 					theme: {
 						stylesheet: data.get("theme.stylesheet"),
+					},
+					updates: {
+						enabled: form.elements["updates.enabled"].checked,
+						autoCheck: form.elements["updates.autoCheck"].checked,
+						recheckIntervalHours: data.get("updates.recheckIntervalHours"),
 					},
 				};
 			}

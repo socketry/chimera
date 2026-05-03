@@ -32,7 +32,7 @@ test("forwards surface request method, headers, path and body", async () => {
 	assert.equal(forwarded[0].method, "POST");
 	assert.equal(forwarded[0].headers["content-type"], "text/plain");
 	assert.equal(forwarded[0].headers["x-test"], "yes");
-	assert.equal(forwarded[0].body, "hello");
+	assert.equal(await new Response(forwarded[0].body).text(), "hello");
 });
 
 test("does not read a body for GET surface requests", async () => {
@@ -52,4 +52,27 @@ test("does not read a body for GET surface requests", async () => {
 	assert.equal(forwarded.length, 1);
 	assert.equal(forwarded[0].method, "GET");
 	assert.equal(forwarded[0].body, undefined);
+});
+
+test("forwards request bodies through the streaming client API", async () => {
+	const forwarded = [];
+	const client = {
+		request(request) {
+			forwarded.push(request);
+			return {status: 202, headers: {}, body: "accepted"};
+		},
+	};
+
+	const response = await handleRequest(client, {
+		path: "/upload",
+		request: new Request("https://chimera.local/upload", {
+			method: "POST",
+			body: "stream me",
+		}),
+	});
+
+	assert.deepEqual(response, {status: 202, headers: {}, body: "accepted"});
+	assert.equal(forwarded.length, 1);
+	assert.equal(typeof forwarded[0].body.getReader, "function");
+	assert.equal(await new Response(forwarded[0].body).text(), "stream me");
 });

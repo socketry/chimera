@@ -87,3 +87,46 @@ test("profile terminal configuration overrides the default terminal options", ()
 	assert.equal(configuration.terminalOptions().fontFamily, "Monaco, monospace");
 	assert.equal(configuration.terminalOptions().scrollback, 500);
 });
+
+test("update configuration defaults to automatic daily checks", () => {
+	const directory = fs.mkdtempSync(path.join(os.tmpdir(), "chimera-config-"));
+	const configPath = path.join(directory, "chimera.json");
+
+	fs.writeFileSync(configPath, "{}");
+
+	const configuration = new Configuration({configPath});
+
+	assert.deepEqual(configuration.updateOptions(), {
+		enabled: true,
+		autoCheck: true,
+		recheckIntervalHours: 24,
+	});
+});
+
+test("profile update configuration overrides the default update options", () => {
+	const directory = fs.mkdtempSync(path.join(os.tmpdir(), "chimera-config-"));
+	const configPath = path.join(directory, "chimera.json");
+
+	fs.writeFileSync(configPath, JSON.stringify({
+		updates: {
+			autoCheck: true,
+			recheckIntervalHours: 24,
+		},
+		profiles: {
+			quiet: {
+				updates: {
+					autoCheck: false,
+					recheckIntervalHours: 72,
+				},
+			},
+		},
+	}));
+
+	const configuration = new Configuration({configPath, profileName: "quiet"});
+
+	assert.deepEqual(configuration.updateOptions(), {
+		enabled: true,
+		autoCheck: false,
+		recheckIntervalHours: 72,
+	});
+});

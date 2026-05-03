@@ -9,6 +9,7 @@
   - Standardize built-in interactive HTTY tools on Lit with shared support helpers.
   - Refresh the Bookmarks menu from the bookmarks editor using `POST /.well-known/chimera/bookmarks/refresh`.
   - Add bundled help for creating bookmarks.
+  - Show update download progress and make update checks configurable.
   - Keep HTTY bootstrap handling inside the terminal pane.
   - Mirror test file paths after their source modules.
   - Prepare releases automatically when running `npm version`.
