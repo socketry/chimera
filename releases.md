@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Add native Linux window controls and default new windows to non-fullscreen mode.
+
 ## v0.4.1
 
   - Update released file names.

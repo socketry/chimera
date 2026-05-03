@@ -5,6 +5,7 @@ import {fileURLToPath} from "node:url";
 import {BookmarksController} from "./BookmarksController.js";
 import {Configuration} from "./Configuration.js";
 import {DarwinWindowController} from "./DarwinWindowController.js";
+import {LinuxWindowController} from "./LinuxWindowController.js";
 import {trace} from "./Utilities.js";
 import {UpdateController} from "./UpdateController.js";
 import {WindowController} from "./WindowController.js";
@@ -62,7 +63,15 @@ export class ChimeraApplication {
 	}
 
 	windowControllerClass() {
-		return process.platform === "darwin" ? DarwinWindowController : WindowController;
+		if (process.platform === "darwin") {
+			return DarwinWindowController;
+		}
+		
+		if (process.platform === "linux") {
+			return LinuxWindowController;
+		}
+		
+		return WindowController;
 	}
 
 	async createWindow(options = {}) {

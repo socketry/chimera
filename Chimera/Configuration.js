@@ -6,7 +6,7 @@ const DEFAULT_CONFIGURATION = {
 	window: {
 		width: 1440,
 		height: 900,
-		fullscreen: true,
+		fullscreen: false,
 		backgroundColor: "#050914",
 		titleBarStyle: "hidden",
 		titleBarOverlay: true,
