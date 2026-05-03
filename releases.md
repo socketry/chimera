@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.3.0
 
   - Add WebGL-accelerated terminal rendering with fallback to the default renderer.
   - Add a Bookmarks menu populated from `bookmarks.json` next to the Chimera configuration file.
