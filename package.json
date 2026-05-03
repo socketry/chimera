@@ -13,6 +13,7 @@
 		"dist": "electron-builder",
 		"prerelease": "npm run build-release-notes",
 		"release": "electron-builder --publish always",
+		"version": "node scripts/prepare-version-release-notes.mjs && npm run build-release-notes && git add releases.md Chimera/release-notes.html",
 		"build-release-notes": "node scripts/build-release-notes.mjs",
 		"generate-icons": "node scripts/generate-icons.cjs",
 		"test": "node --test",
