@@ -255,7 +255,7 @@ export class ChimeraApplication {
 					]),
 					{type: "separator"},
 					{
-						label: "Edit Bookmarks",
+						label: "Edit Bookmarks...",
 						click: () => {
 							void this.editBookmarks();
 						},
@@ -315,13 +315,13 @@ export class ChimeraApplication {
 	applicationMenu() {
 		const applicationItems = [
 			{
-				label: "Edit Configuration",
+				label: "Edit Configuration...",
 				click: () => {
 					void this.editConfiguration();
 				},
 			},
 			{
-				label: "Check for Updates",
+				label: "Check for Updates...",
 				click: () => {
 					void this.updateController.checkForUpdates({userInitiated: true});
 				},
