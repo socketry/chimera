@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.2.2
 
   - Add release notes.
   - Make auto-update check and install explicit.
