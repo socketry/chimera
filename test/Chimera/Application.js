@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import {fileURLToPath} from "node:url";
@@ -20,13 +22,26 @@ function exampleCommand(example) {
 	return `node ${shellQuote(path.join(projectRoot, "examples", example))}`;
 }
 
-async function launchChimera() {
+function createStateDirectory(configuration = {
+	window: {
+		width: 1280,
+		height: 800,
+		fullscreen: false,
+	},
+}) {
+	const directory = fs.mkdtempSync(path.join(os.tmpdir(), "chimera-e2e-"));
+	const nextConfigPath = path.join(directory, "config.json");
+	fs.writeFileSync(nextConfigPath, JSON.stringify(configuration, null, "\t"));
+	return {directory, configPath: nextConfigPath};
+}
+
+async function launchChimera({configPath: nextConfigPath = configPath} = {}) {
 	const electronApp = await electron.launch({
 		args: [projectRoot],
 		env: {
 			...process.env,
 			CHIMERA_E2E: "1",
-			CHIMERA_CONFIG_PATH: configPath,
+			CHIMERA_CONFIG_PATH: nextConfigPath,
 		},
 	});
 
@@ -496,6 +511,85 @@ test("closing the surface tab returns the shell to terminal mode", {concurrency:
 		await window.waitForFunction(() => {
 			const active = document.activeElement;
 			return active?.classList?.contains("xterm-helper-textarea") === true;
+		});
+	} finally {
+		await electronApp.close();
+	}
+});
+
+test("configuration refresh from an embedded surface updates terminal options", {concurrency: false}, async () => {
+	const config = createStateDirectory();
+	const {electronApp, window} = await launchChimera({configPath: config.configPath});
+	
+	try {
+		await launchExampleFromShell(window, "hello-world.mjs");
+		const surfaceId = await waitForActiveSurfaceId(window);
+		await window.evaluate(() => {
+			window.__configurationUpdates = [];
+			window.chimera.onConfigurationUpdated((payload) => {
+				window.__configurationUpdates.push(payload);
+			});
+		});
+		
+		fs.writeFileSync(config.configPath, JSON.stringify({
+			window: {
+				width: 1280,
+				height: 800,
+				fullscreen: false,
+			},
+			terminal: {
+				fontSize: 23,
+				scrollback: 4321,
+			},
+		}, null, "\t"));
+		
+		const status = await evaluateSurface(electronApp, surfaceId, `
+			fetch("/.well-known/chimera/configuration/refresh", {method: "POST"}).then((response) => response.status)
+		`);
+		assert.equal(status, 204);
+		
+		await window.waitForFunction(async () => {
+			const options = await window.chimera.getTerminalOptions();
+			return options.fontSize === 23 && options.scrollback === 4321;
+		});
+		await window.waitForFunction(() => {
+			return window.__configurationUpdates?.some((update) => {
+				return update.terminalOptions?.fontSize === 23 && update.terminalOptions?.scrollback === 4321;
+			});
+		});
+	} finally {
+		await electronApp.close();
+	}
+});
+
+test("bookmark refresh from an embedded surface rebuilds the application menu", {concurrency: false}, async () => {
+	const config = createStateDirectory();
+	const bookmarksPath = path.join(config.directory, "bookmarks.json");
+	const {electronApp, window} = await launchChimera({configPath: config.configPath});
+	
+	try {
+		await launchExampleFromShell(window, "hello-world.mjs");
+		const surfaceId = await waitForActiveSurfaceId(window);
+		
+		fs.writeFileSync(bookmarksPath, JSON.stringify([
+			{
+				title: "Surface Refresh Bookmark",
+				command: "echo",
+				args: ["ok"],
+			},
+		], null, "\t"));
+		
+		const status = await evaluateSurface(electronApp, surfaceId, `
+			fetch("/.well-known/chimera/bookmarks/refresh", {method: "POST"}).then((response) => response.status)
+		`);
+		assert.equal(status, 204);
+		
+		await electronApp.evaluate(({Menu}) => {
+			const menu = Menu.getApplicationMenu();
+			const bookmarksMenu = menu.items.find((item) => item.label === "Bookmarks");
+			return bookmarksMenu?.submenu?.items.some((item) => item.label === "Surface Refresh Bookmark") ?? false;
+		}).then((found) => {
+			assert.equal(found, true);
 		});
 	} finally {
 		await electronApp.close();
