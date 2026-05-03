@@ -36,12 +36,12 @@ Application.open(() => ({
 			
 			.hud {
 				position: fixed;
-				inset: 18px 18px auto;
+				inset: 14px 14px auto;
 				display: flex;
 				justify-content: space-between;
-				gap: 16px;
+				gap: 10px;
 				pointer-events: none;
-				font-size: 14px;
+				font-size: 13px;
 				font-weight: 650;
 				text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55);
 			}
@@ -68,15 +68,15 @@ Application.open(() => ({
 			const keys = new Set();
 			
 			const world = {
-				width: 2200,
-				height: 900,
-				gravity: 2100,
+				width: 1900,
+				height: 600,
+				gravity: 1700,
 				cameraX: 0,
 			};
 			
 			const player = {
 				x: 90,
-				y: 560,
+				y: 410,
 				width: 34,
 				height: 44,
 				vx: 0,
@@ -86,20 +86,20 @@ Application.open(() => ({
 			};
 			
 			const platforms = [
-				{x: 0, y: 740, width: 520, height: 46},
-				{x: 610, y: 650, width: 250, height: 34},
-				{x: 940, y: 565, width: 240, height: 34},
-				{x: 1240, y: 680, width: 280, height: 34},
-				{x: 1580, y: 585, width: 260, height: 34},
-				{x: 1900, y: 720, width: 300, height: 46},
+				{x: 0, y: 520, width: 450, height: 42},
+				{x: 540, y: 450, width: 230, height: 30},
+				{x: 850, y: 370, width: 230, height: 30},
+				{x: 1140, y: 480, width: 260, height: 30},
+				{x: 1470, y: 395, width: 240, height: 30},
+				{x: 1760, y: 520, width: 280, height: 42},
 			];
 			
 			const stars = [
-				{x: 690, y: 600, taken: false},
-				{x: 1030, y: 515, taken: false},
-				{x: 1370, y: 630, taken: false},
-				{x: 1700, y: 535, taken: false},
-				{x: 2030, y: 670, taken: false},
+				{x: 625, y: 400, taken: false},
+				{x: 955, y: 320, taken: false},
+				{x: 1270, y: 430, taken: false},
+				{x: 1585, y: 345, taken: false},
+				{x: 1840, y: 470, taken: false},
 			];
 			
 			function resize() {
@@ -118,8 +118,8 @@ Application.open(() => ({
 			}
 			
 			function update(delta) {
-				const speed = 430;
-				const jump = 760;
+				const speed = 390;
+				const jump = 640;
 				
 				player.vx = 0;
 				if (pressed("ArrowLeft", "a", "A")) player.vx -= speed;
@@ -145,7 +145,7 @@ Application.open(() => ({
 				
 				if (player.y > world.height) {
 					player.x = 90;
-					player.y = 560;
+					player.y = 410;
 					player.vx = 0;
 					player.vy = 0;
 				}
