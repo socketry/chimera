@@ -1,40 +1,70 @@
 # Chimera
 
-Chimera is an Electron terminal emulator that can attach browser surfaces to a normal terminal session over HTTY.
+Traditional terminals are excellent command environments, but they are a poor substitute for rich application UI. Text flow, highlighting, animation, media, layout, and direct manipulation all become awkward when everything must be squeezed through terminal cells.
 
-## Current Default Demo Path
+Chimera keeps the power of the TTY and pairs it with the modern web stack. A command can run like any other terminal process, then use HTTY to attach local browser surfaces for richer interaction when terminal rendering is no longer enough.
 
-Chimera includes JavaScript HTTY demos under `examples/`:
+> [!WARNING]
+> Chimera and the surrounding HTTY stack are experimental. Expect protocol, configuration, and application behavior to evolve. In addition, feel free to contribute feedback, bug reports, and code to help shape the future of this project.
 
-- `examples/hello-world.mjs`
-- `examples/browser-demo.mjs`
-- `examples/chimera-configuration.mjs`
-- `examples/platformer-demo.mjs`
-- `examples/styled-browser-demo.mjs`
+## Download
 
-Those demos use the published `@socketry/htty` package dependency declared in `package.json`.
+Install the latest packaged build from GitHub Releases:
 
-The older Ruby demos in `../async-htty/examples` are still useful as a reference implementation, but they are no longer the primary launch path used by Chimera.
+- [Download macOS](https://github.com/socketry/chimera/releases/latest/download/Chimera-macOS-arm64.dmg)
+- [Download Linux](https://github.com/socketry/chimera/releases/latest/download/Chimera-Linux-x64.AppImage)
+- [Download Windows](https://github.com/socketry/chimera/releases/latest/download/Chimera-Windows-x64.exe)
+- [All releases](https://github.com/socketry/chimera/releases/latest)
 
-## Development
+Packaged builds can check for updates from the Chimera application menu.
 
-Install dependencies:
+## First Run
 
-```bash
-npm install
-```
+Open Chimera and start a shell with `File > New Tab` or `Cmd/Ctrl+T`. You can use it like a regular terminal.
 
-Start the app:
+To see an HTTY surface, run one of the included examples from a development checkout:
 
 ```bash
-npm start
+node examples/browser-demo.mjs
 ```
+
+Chimera will keep the terminal session open and create a browser tab for the attached HTTY application.
+
+## Bookmarks
+
+Bookmarks are command shortcuts shown in the `Bookmarks` menu. They are useful for SSH sessions, project shells, and small HTTY tools.
+
+Use `Bookmarks > Edit Bookmarks...` to edit them interactively. The default file is:
+
+```text
+~/.local/state/chimera/bookmarks.json
+```
+
+A minimal bookmark looks like this:
+
+```json
+[
+	{
+		"title": "My Server",
+		"command": "ssh",
+		"args": ["my-server"]
+	}
+]
+```
+
+Bookmarks can also contain separators and nested groups. See `Help > Bookmarks` inside Chimera for the full format.
 
 ## Configuration
 
-Chimera reads JSON configuration from `~/.local/state/chimera/configuration.json` by default. You can override the path with `CHIMERA_CONFIG_PATH` and select a profile with `CHIMERA_CONFIG_PROFILE`.
+Use `Chimera > Edit Configuration...` to edit settings interactively. The default configuration file is:
 
-The built-in UI follows the operating system light/dark preference automatically. To override the theme, provide a stylesheet path:
+```text
+~/.local/state/chimera/configuration.json
+```
+
+You can override the path with `CHIMERA_CONFIG_PATH` and select a profile with `CHIMERA_CONFIG_PROFILE`.
+
+Common options include terminal font settings, theme stylesheet, and update checks:
 
 ```json
 {
@@ -55,12 +85,52 @@ The built-in UI follows the operating system light/dark preference automatically
 }
 ```
 
-Relative stylesheet paths are resolved from the directory containing the configuration file. The custom stylesheet is loaded after Chimera's default stylesheet, so it can override the default CSS variables such as `--terminal-bg`, `--text`, `--muted`, `--accent`, and `--xterm-bg`. Terminal options are passed to xterm.js when each terminal is created. Update options control whether packaged builds use the updater and whether Chimera checks automatically at startup and on the configured interval.
+Relative stylesheet paths are resolved from the directory containing the configuration file. Terminal and theme changes are applied to existing windows when the configuration editor saves.
 
-Run the HTTY-focused unit tests:
+## HTTY Stack
+
+Chimera is the desktop client in the HTTY ecosystem:
+
+- [`protocol-htty`](https://github.com/socketry/protocol-htty) defines the DCS bootstrap used to negotiate an attached session.
+- [`protocol-http2`](https://github.com/socketry/protocol-http2) provides the HTTP/2 wire semantics carried as plaintext `h2c` after bootstrap.
+- [`async-htty`](https://github.com/socketry/async-htty) integrates HTTY with Ruby Async applications.
+- [`htty-js`](https://github.com/socketry/htty-js) provides the JavaScript `@socketry/htty` package used by Chimera and the examples.
+
+## Architecture
+
+- Chimera runs command processes in the Electron main process using a PTY by default.
+- `@socketry/htty` detects the HTTY bootstrap and provides client/session primitives.
+- After bootstrap, Chimera forwards requests and responses between the attached HTTP/2 session and Electron browser surfaces.
+- One command process maps to one Chimera session, and a session can expose multiple browser surface tabs.
+
+## Contributing
+
+We welcome contributions to this project.
+
+1.  Fork it.
+2.  Create your feature branch (`git checkout -b my-new-feature`).
+3.  Commit your changes (`git commit -am 'Add some feature'`).
+4.  Push to the branch (`git push origin my-new-feature`).
+5.  Create new Pull Request.
+
+### Development
+
+Install dependencies:
 
 ```bash
-node --test test/BrowserSurface.js
+npm install
+```
+
+Start the app:
+
+```bash
+npm start
+```
+
+Run the unit tests:
+
+```bash
+npm test
 ```
 
 Run the Electron end-to-end tests:
@@ -69,9 +139,16 @@ Run the Electron end-to-end tests:
 npm run test:e2e
 ```
 
-## Architecture
+Build release artifacts locally:
 
-- `@socketry/htty` provides HTTY bootstrap detection plus the JavaScript client and server primitives.
-- Chimera uses `Client`, `BootstrapDecoder`, and the terminal `Session` wrapper from `@socketry/htty` directly in the Electron main process.
-- Browser tabs are created from HTTP responses returned by the attached HTTY application.
-- One command process maps to one HTTY session, and multiple surface tabs can be opened against that session.
+```bash
+npm run dist
+```
+
+### Developer Certificate of Origin
+
+In order to protect users of this project, we require all contributors to comply with the [Developer Certificate of Origin](https://developercertificate.org/). This ensures that all contributions are properly licensed and attributed.
+
+### Community Guidelines
+
+This project is best served by a collaborative and respectful environment. Treat each other professionally, respect differing viewpoints, and engage constructively. Harassment, discrimination, or harmful behavior is not tolerated. Communicate clearly, listen actively, and support one another. If any issues arise, please inform the project maintainers.

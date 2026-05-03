@@ -8,6 +8,7 @@
   - Improve editor save buttons and feedback for bookmarks and configuration.
   - Keep tab focus near the closed tab by selecting the next tab to the right, then the previous tab.
   - Add trailing ellipses to menu commands that open another flow.
+  - Publish release artifacts with stable, version-independent names for latest-download links.
 
 ## v0.3.0
 
