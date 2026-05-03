@@ -390,13 +390,14 @@ export class WorkspaceController {
 			return;
 		}
 
+		const closedTabIndex = this.tabOrder.indexOf(tabId);
 		this.tabs.delete(tabId);
 		this.tabOrder = this.tabOrder.filter((id) => id !== tabId);
 		tab.dispose();
 
 		if (this.activeTabId === tabId) {
 			this.activeTabId = null;
-			const nextTabId = this.tabOrder[0] ?? null;
+			const nextTabId = this.tabOrder[closedTabIndex] ?? this.tabOrder[closedTabIndex - 1] ?? null;
 			if (nextTabId) {
 				this.activateTab(nextTabId, {focusPrimary: true});
 			}
