@@ -303,8 +303,8 @@ export class UpdateController {
 
 		this.downloaded = false;
 		const window = new this.BrowserWindow({
-			width: 420,
-			height: 220,
+			width: 450,
+			height: 250,
 			resizable: false,
 			minimizable: false,
 			maximizable: false,

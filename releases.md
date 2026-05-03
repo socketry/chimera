@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Fix size of update window.
+
 ## v0.4.2
 
   - Add native Linux window controls and default new windows to non-fullscreen mode.
