@@ -1,4 +1,4 @@
-import {app, BrowserWindow, dialog, ipcMain, Menu, protocol} from "electron";
+import {app, BrowserWindow, dialog, protocol} from "electron";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 
@@ -6,6 +6,8 @@ import {BookmarksController} from "./BookmarksController.js";
 import {Configuration} from "./Configuration.js";
 import {DarwinWindowController} from "./DarwinWindowController.js";
 import {LinuxWindowController} from "./LinuxWindowController.js";
+import {MenuController} from "./MenuController.js";
+import {RendererCommandDispatcher} from "./RendererCommandDispatcher.js";
 import {trace} from "./Utilities.js";
 import {UpdateController} from "./UpdateController.js";
 import {WindowController} from "./WindowController.js";
@@ -23,6 +25,8 @@ export class ChimeraApplication {
 			configuration: this.configuration,
 			trace: this.trace.bind(this),
 		});
+		this.menuController = new MenuController(this);
+		this.rendererCommandDispatcher = new RendererCommandDispatcher(this);
 		this.rendererPath = path.join(__dirname, "renderer.html");
 		this.preloadPath = path.join(__dirname, "preload.cjs");
 		this.updateController = new UpdateController({
@@ -209,270 +213,11 @@ export class ChimeraApplication {
 	}
 
 	buildApplicationMenu() {
-		const bookmarks = this.bookmarksController.bookmarks();
-		const bookmarkMenuItems = this.bookmarkMenuItems(bookmarks);
-		const template = [
-			this.applicationMenu(),
-			{
-				label: "Session",
-				submenu: [
-					{
-						label: "New Window",
-						accelerator: "CmdOrCtrl+N",
-						click: () => {
-							void this.createWindow();
-						},
-					},
-					{
-						label: "New Tab",
-						accelerator: "CmdOrCtrl+T",
-						click: () => {
-							this.focusedWindowController()?.createSession();
-						},
-					},
-					{
-						label: "Close Tab",
-						accelerator: "CmdOrCtrl+W",
-						click: () => {
-							this.focusedWindowController()?.closeActiveTab();
-						},
-					},
-					{
-						label: "Previous Tab",
-						accelerator: "CmdOrCtrl+Shift+Left",
-						click: () => {
-							this.focusedWindowController()?.activateRelativeTab(-1);
-						},
-					},
-					{
-						label: "Next Tab",
-						accelerator: "CmdOrCtrl+Shift+Right",
-						click: () => {
-							this.focusedWindowController()?.activateRelativeTab(1);
-						},
-					},
-				],
-			},
-			{
-				label: "Bookmarks",
-				submenu: [
-					...(bookmarkMenuItems.length > 0 ? bookmarkMenuItems : [
-						{
-							label: "No Bookmarks",
-							enabled: false,
-						},
-					]),
-					{type: "separator"},
-					{
-						label: "Edit Bookmarks...",
-						click: () => {
-							void this.editBookmarks();
-						},
-					},
-				],
-			},
-			{role: "editMenu"},
-			{
-				label: "View",
-				submenu: [
-					{
-						label: "Toggle Tab Bar",
-						accelerator: "CmdOrCtrl+Shift+F",
-						click: () => {
-							this.focusedWindowController()?.toggleTabBar();
-						},
-					},
-					{type: "separator"},
-					{role: "resetZoom"},
-					{role: "zoomIn"},
-					{role: "zoomOut"},
-					{type: "separator"},
-					{role: "reload"},
-					{role: "forceReload"},
-					{role: "toggleDevTools"},
-					{
-						label: "Inspect Active Web View",
-						click: () => {
-							this.focusedWindowController()?.showActiveSurfaceDeveloperTools();
-						},
-					},
-				],
-			},
-			{role: "windowMenu"},
-			{
-				label: "Help",
-				submenu: [
-					{
-						label: "Releases",
-						click: () => {
-							void this.showReleases();
-						},
-					},
-					{
-						label: "Bookmarks",
-						click: () => {
-							void this.showBookmarksHelp();
-						},
-					},
-				],
-			},
-		];
-
-		Menu.setApplicationMenu(Menu.buildFromTemplate(template));
-	}
-
-	applicationMenu() {
-		const applicationItems = [
-			{
-				label: "Edit Configuration...",
-				click: () => {
-					void this.editConfiguration();
-				},
-			},
-			{
-				label: "Check for Updates...",
-				click: () => {
-					void this.updateController.checkForUpdates({userInitiated: true});
-				},
-			},
-		];
-
-		if (process.platform !== "darwin") {
-			return {
-				label: "Chimera",
-				submenu: applicationItems,
-			};
-		}
-
-		return {
-			label: app.name,
-			submenu: [
-				{role: "about"},
-				{type: "separator"},
-				...applicationItems,
-				{type: "separator"},
-				{role: "services"},
-				{type: "separator"},
-				{role: "hide"},
-				{role: "hideOthers"},
-				{role: "unhide"},
-				{type: "separator"},
-				{role: "quit"},
-			],
-		};
-	}
-
-	bookmarkMenuItems(bookmarks) {
-		return bookmarks.map((bookmark) => this.bookmarkMenuItem(bookmark)).filter(Boolean);
-	}
-
-	bookmarkMenuItem(bookmark) {
-		if (bookmark.type === "separator") {
-			return {type: "separator"};
-		}
-
-		if (bookmark.type === "group") {
-			return {
-				label: bookmark.title,
-				submenu: this.bookmarkMenuItems(bookmark.items),
-			};
-		}
-
-		if (bookmark.type === "command") {
-			return {
-				label: bookmark.title,
-				click: () => {
-					void this.openBookmark(bookmark);
-				},
-			};
-		}
-
-		return null;
+		this.menuController.buildApplicationMenu();
 	}
 
 	registerIpcHandlers() {
-		ipcMain.handle("chimera:get-sessions", (event) => {
-			return this.controllerForSender(event.sender)?.snapshotSessions() ?? [];
-		});
-		
-		ipcMain.handle("chimera:get-terminal-options", () => {
-			return this.configuration.terminalOptions();
-		});
-
-		ipcMain.handle("chimera:set-active-session", (event, sessionId) => {
-			return this.controllerForSender(event.sender)?.setActiveSession(sessionId) ?? null;
-		});
-
-		ipcMain.handle("chimera:set-session-title", (event, sessionId, title) => {
-			return this.controllerForSender(event.sender)?.updateSessionTitle(sessionId, title) ?? null;
-		});
-
-		ipcMain.handle("chimera:set-session-transport-mode", (event, sessionId, mode) => {
-			return this.controllerForSender(event.sender)?.setSessionTransportMode(sessionId, mode) ?? null;
-		});
-
-		ipcMain.handle("chimera:interrupt-session", (event, sessionId) => {
-			return this.controllerForSender(event.sender)?.interruptSession(sessionId) ?? false;
-		});
-
-		ipcMain.handle("chimera:new-window", async () => {
-			const controller = await this.createWindow();
-			return {windowId: controller.id};
-		});
-		
-		ipcMain.handle("chimera:move-session-to-new-window", (event, sessionId, options = {}) => {
-			return this.moveSessionToNewWindow(this.controllerForSender(event.sender), sessionId, options);
-		});
-		
-		ipcMain.handle("chimera:toggle-tab-bar", (event) => {
-			const controller = this.controllerForSender(event.sender);
-			controller?.toggleTabBar();
-			return controller?.isTabBarHidden ?? false;
-		});
-
-		ipcMain.handle("chimera:start", (event, options = {}) => {
-			const controller = this.controllerForSender(event.sender);
-			const command = options.command || process.env.SHELL || "/bin/zsh";
-			const args = Array.isArray(options.args) ? options.args : [];
-			this.trace("ipc:start", {command, args, cwd: options.cwd, windowId: controller?.id ?? null});
-			return controller?.createSession(command, args, {cwd: options.cwd}) ?? null;
-		});
-
-		ipcMain.handle("chimera:attach-browser", (event, sessionId, requestPath = "/") => {
-			return this.controllerForSender(event.sender)?.attachBrowserSurface(sessionId, requestPath) ?? null;
-		});
-
-		ipcMain.handle("chimera:close-surface", (event, surfaceId) => {
-			return this.controllerForSender(event.sender)?.closeSurface(surfaceId) ?? false;
-		});
-
-		ipcMain.handle("chimera:evaluate-surface", (event, surfaceId, script) => {
-			const controller = this.controllerForSender(event.sender);
-			const surface = controller?.surfaces.get(surfaceId);
-			if (!surface) {
-				return null;
-			}
-
-			return surface.view.webContents.executeJavaScript(script);
-		});
-
-		ipcMain.handle("chimera:close-session", (event, sessionId) => {
-			const controller = this.controllerForSender(event.sender);
-			this.trace("ipc:close-session", {sessionId, windowId: controller?.id ?? null});
-			return controller?.closeSession(sessionId) ?? false;
-		});
-
-		ipcMain.on("chimera:input", (event, {sessionId, data}) => {
-			this.controllerForSender(event.sender)?.handleInput(sessionId, data);
-		});
-
-		ipcMain.on("chimera:resize", (event, {sessionId, cols, rows}) => {
-			this.controllerForSender(event.sender)?.handleResize(sessionId, cols, rows);
-		});
-
-		ipcMain.on("chimera:surface-view-state", (event, {surfaceId, state}) => {
-			this.controllerForSender(event.sender)?.syncSurfaceView(surfaceId, state);
-		});
+		this.rendererCommandDispatcher.register();
 	}
 
 	async start() {
