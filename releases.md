@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Update released file names.
+
 ## v0.4.0
 
   - Upgrade to `@socketry/htty` v0.4.0 and stream forwarded session requests without buffering subresources.
