@@ -65,7 +65,7 @@ test("ignores stream chunks after a subresource response is cancelled", async ()
 	});
 });
 
-test("buffers streamed document responses before wrapping them", async () => {
+test("streams text document responses without buffering", async () => {
 	const body = new PassThrough();
 	const responsePromise = handleRequest(createClient({
 		status: 200,
@@ -81,16 +81,58 @@ test("buffers streamed document responses before wrapping them", async () => {
 		},
 	});
 
+	const response = await Promise.race([
+		responsePromise,
+		new Promise((resolve) => setTimeout(() => resolve(null), 50)),
+	]);
+	
+	assert.ok(response, "text document responses should resolve before the body finishes");
 	body.write("hello");
 	body.end(" stream");
-	const response = await responsePromise;
 
 	assert.equal(response.status, 200);
-	assert.equal(response.headers.get("content-type"), "text/html; charset=utf-8");
-	assert.match(await response.text(), /<pre>hello stream<\/pre>/);
+	assert.equal(response.headers.get("content-type"), "text/plain; charset=utf-8");
+	assert.equal(await response.text(), "hello stream");
 });
 
-test("wraps document requests and reports document metadata", async () => {
+test("streams html document responses without buffering", async () => {
+	const body = new PassThrough();
+	const documents = [];
+	const responsePromise = handleRequest(createClient({
+		status: 200,
+		headers: {"content-type": "text/html; charset=utf-8"},
+		body,
+	}), {
+		path: "/",
+		request: {
+			method: "GET",
+			headers: new Headers(),
+			destination: "document",
+			mode: "navigate",
+		},
+		onDocument(document) {
+			documents.push(document);
+		},
+	});
+	
+	const response = await Promise.race([
+		responsePromise,
+		new Promise((resolve) => setTimeout(() => resolve(null), 50)),
+	]);
+	
+	assert.ok(response, "HTML document responses should resolve before the body finishes");
+	body.write("<h1>Hello");
+	body.end(" stream</h1>");
+	
+	assert.equal(response.status, 200);
+	assert.equal(response.headers.get("content-type"), "text/html; charset=utf-8");
+	assert.equal(await response.text(), "<h1>Hello stream</h1>");
+	assert.equal(documents.length, 1);
+	assert.equal(documents[0].document.mode, "html");
+	assert.equal(documents[0].document.body, null);
+});
+
+test("passes document requests through and reports document metadata", async () => {
 	const documents = [];
 	const surface = {id: "surface-1"};
 	const response = await handleRequest(createClient({
@@ -112,10 +154,11 @@ test("wraps document requests and reports document metadata", async () => {
 	});
 
 	assert.equal(response.status, 200);
-	assert.equal(response.headers.get("content-type"), "text/html; charset=utf-8");
-	assert.match(await response.text(), /<pre>hello<\/pre>/);
+	assert.equal(response.headers.get("content-type"), "text/plain; charset=utf-8");
+	assert.equal(await response.text(), "hello");
 	assert.equal(documents.length, 1);
 	assert.equal(documents[0].surface, surface);
 	assert.equal(documents[0].path, "/");
-	assert.equal(documents[0].document.mode, "text");
+	assert.equal(documents[0].document.mode, "native");
+	assert.equal(documents[0].document.body, null);
 });

@@ -4,6 +4,7 @@
 
   - Add native Linux window controls and default new windows to non-fullscreen mode.
   - Make `Configuration` loading more robust and log errors to `console`.
+  - Stream HTTY document responses directly through `WebContentsView` and extract stream adapter helpers.
 
 ## v0.4.1
 
