@@ -11,6 +11,7 @@ import {
 } from "./Utilities.js";
 import {resolveSessionCwd} from "./SessionDefaults.js";
 import {SurfaceController} from "./SurfaceController.js";
+import {handleRequest as handleSessionRequest} from "./SessionRequest.js";
 
 export class SessionController {
 	constructor(delegate, options) {
@@ -358,6 +359,17 @@ export class SessionController {
 		return true;
 	}
 
+	async handleRequest({surface, path, request}) {
+		return handleSessionRequest(this.client, {
+			surface,
+			path,
+			request,
+			onDocument: ({surface, path, response, document}) => {
+				this.handleSurfaceDocument(surface, path, response, document);
+			},
+		});
+	}
+
 	// ── Surface event forwarding ───────────────────────────────────────────
 
 	handleSurfaceDocument(surface, requestPath, response, document) {
@@ -404,6 +416,14 @@ export class SessionController {
 
 	surfaceControllerDidRequestInterrupt() {
 		return this.sendInterrupt();
+	}
+
+	surfaceControllerDidRequestBookmarksRefresh(surface) {
+		this.trace("surfaceController:bookmarks-refresh", {
+			sessionId: this.id,
+			surfaceId: surface.id,
+		});
+		this.delegate.sessionControllerDidRequestBookmarksRefresh?.(this, surface);
 	}
 
 	surfaceControllerDidChange(surface) {

@@ -1,7 +1,7 @@
 import {WebContentsView} from "electron";
 
-import {browserDocumentForResponse} from "./BrowserSurface.js";
 import {normalizeRequestPath, parseSurfaceURL, toSurfaceURL} from "./Utilities.js";
+import {WellKnownController} from "./WellKnownController.js";
 
 function surfaceErrorResponse(status, message) {
 	return new Response(message, {
@@ -31,6 +31,7 @@ export class SurfaceController {
 		this.focused = false;
 		this.bounds = null;
 		this.view = null;
+		this.wellKnownController = new WellKnownController(this);
 	}
 
 	async initialize() {
@@ -81,6 +82,7 @@ export class SurfaceController {
 	}
 
 	async handleSurfaceRequest(request) {
+		// Electron delivers every embedded WebContentsView request for the htty:// protocol here. The URL host selects the owning Chimera session; the path is either a Chimera-owned .well-known route or an application request forwarded over the session's HTTY client. SessionController handles the application response shape, including document navigation bookkeeping and subresource pass-through, then returns a Fetch Response for Electron to load in the isolated web view.
 		const {sessionId, requestPath} = parseSurfaceURL(request.url);
 		if (sessionId !== this.sessionId) {
 			return surfaceErrorResponse(403, "Cross-session HTTY navigation is not supported.");
@@ -91,32 +93,20 @@ export class SurfaceController {
 		}
 
 		try {
-			const method = (request.method || "GET").toUpperCase();
-			const headers = Object.fromEntries(request.headers.entries());
-			const body = method === "GET" || method === "HEAD" ? undefined : await request.text();
-			const response = await this.sessionController.client.request({
+			// Chimera-owned .well-known routes are handled by the host before the request reaches the HTTY application.
+			const wellKnownResponse = this.wellKnownController.handleRequest({
 				path: requestPath,
-				method,
-				headers,
-				body,
+				request,
 			});
-			const isDocumentRequest = request.destination === "document" || request.mode === "navigate";
-
-			if (isDocumentRequest) {
-				const document = browserDocumentForResponse(response);
-				this.sessionController.handleSurfaceDocument(this, requestPath, response, document);
-				return new Response(document.body, {
-					status: response.status,
-					headers: {
-						...response.headers,
-						"content-type": document.contentType,
-					},
-				});
+			if (wellKnownResponse) {
+				return wellKnownResponse;
 			}
 
-			return new Response(response.body, {
-				status: response.status,
-				headers: response.headers,
+			// All other requests are application traffic and are forwarded through the session's HTTY client.
+			return await this.sessionController.handleRequest({
+				surface: this,
+				path: requestPath,
+				request,
 			});
 		} catch (error) {
 			this.sessionController.handleSurfaceRequestError(error);
@@ -165,6 +155,10 @@ export class SurfaceController {
 
 		this.view.webContents.openDevTools({mode: "detach"});
 		return true;
+	}
+
+	wellKnownControllerDidRequestBookmarksRefresh() {
+		this.delegate.surfaceControllerDidRequestBookmarksRefresh?.(this);
 	}
 
 	close() {

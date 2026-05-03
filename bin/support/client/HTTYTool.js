@@ -15,3 +15,12 @@ export async function postJson(path, body) {
 	}
 	return payload;
 }
+
+export async function refreshChimeraBookmarks() {
+	const response = await fetch("/.well-known/chimera/bookmarks/refresh", {
+		method: "POST",
+	});
+	if (!response.ok) {
+		throw new Error("Could not refresh Chimera bookmarks.");
+	}
+}

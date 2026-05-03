@@ -1,6 +1,6 @@
 import {html, render} from "lit";
 
-import {initialData, postJson} from "/support/client/HTTYTool.js";
+import {initialData, postJson, refreshChimeraBookmarks} from "/support/client/HTTYTool.js";
 
 const data = initialData();
 const app = document.getElementById("app");
@@ -122,6 +122,7 @@ async function saveBookmarks(event) {
 	syncJson();
 	try {
 		await postJson("/save", {bookmarks: rawJson});
+		await refreshChimeraBookmarks();
 		setNotice("success", "Bookmarks saved.");
 	} catch (error) {
 		setNotice("error", error.message || "Could not save bookmarks.");

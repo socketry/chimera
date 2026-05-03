@@ -513,6 +513,10 @@ export class WindowController {
 		}
 	}
 
+	sessionControllerDidRequestBookmarksRefresh() {
+		this.application.buildApplicationMenu();
+	}
+
 	sessionControllerDidRequestInitialSurface(session) {
 		this.attachBrowserSurface(session.id, "/").catch((error) => {
 			session.handleSurfaceRequestError(error);
