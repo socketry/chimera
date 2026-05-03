@@ -229,12 +229,6 @@ export class ChimeraApplication {
 							void this.editBookmarks();
 						},
 					},
-					{
-						label: "Refresh",
-						click: () => {
-							this.buildApplicationMenu();
-						},
-					},
 				],
 			},
 			{role: "editMenu"},

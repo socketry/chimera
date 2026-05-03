@@ -59,7 +59,7 @@ export class Configuration {
 	}
 
 	static defaultConfigPath() {
-		return process.env.CHIMERA_CONFIG_PATH || path.join(os.homedir(), ".local", "state", "chimera.json");
+		return process.env.CHIMERA_CONFIG_PATH || path.join(os.homedir(), ".local", "state", "chimera", "configuration.json");
 	}
 
 	static defaultProfileName() {

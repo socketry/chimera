@@ -5,6 +5,7 @@
   - Add WebGL-accelerated terminal rendering with fallback to the default renderer.
   - Add a Bookmarks menu populated from `bookmarks.json` next to the Chimera configuration file.
   - Add an interactive Edit Bookmarks command for editing `bookmarks.json`.
+  - Move the default application state into `~/.local/state/chimera/`, with configuration in `configuration.json` and bookmarks in `bookmarks.json`.
   - Standardize built-in interactive HTTY tools on Lit with shared support helpers.
   - Refresh the Bookmarks menu from the bookmarks editor using `POST /.well-known/chimera/bookmarks/refresh`.
   - Add bundled help for creating bookmarks.

@@ -45,7 +45,7 @@ test("serves editor client assets", () => {
 });
 
 test("saves normalized bookmarks.json", () => {
-	const {directory, configuration} = createConfigurationDirectory();
+	const {configuration} = createConfigurationDirectory();
 	const app = createBookmarksEditorApp({configuration});
 	const response = app({
 		method: "POST",
@@ -63,7 +63,7 @@ test("saves normalized bookmarks.json", () => {
 
 	assert.equal(response.status, 200);
 	assert.deepEqual(JSON.parse(response.body), {saved: true});
-	assert.deepEqual(JSON.parse(fs.readFileSync(path.join(directory, "bookmarks.json"), "utf8")), [
+	assert.deepEqual(JSON.parse(fs.readFileSync(configuration.bookmarksPath(), "utf8")), [
 		{
 			title: "Production",
 			command: "ssh",

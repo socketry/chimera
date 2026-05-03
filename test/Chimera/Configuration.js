@@ -6,6 +6,20 @@ import test from "node:test";
 
 import {Configuration} from "../../Chimera/Configuration.js";
 
+test("uses an application state directory for the default configuration", () => {
+	const previousConfigPath = process.env.CHIMERA_CONFIG_PATH;
+
+	delete process.env.CHIMERA_CONFIG_PATH;
+	const configurationPath = Configuration.defaultConfigPath();
+	if (previousConfigPath === undefined) {
+		delete process.env.CHIMERA_CONFIG_PATH;
+	} else {
+		process.env.CHIMERA_CONFIG_PATH = previousConfigPath;
+	}
+
+	assert.equal(configurationPath, path.join(os.homedir(), ".local", "state", "chimera", "configuration.json"));
+});
+
 test("resolves theme stylesheet relative to the configuration file", () => {
 	const directory = fs.mkdtempSync(path.join(os.tmpdir(), "chimera-config-"));
 	const configPath = path.join(directory, "chimera.json");

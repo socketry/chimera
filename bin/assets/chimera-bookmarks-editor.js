@@ -9,6 +9,7 @@ const example = data.exampleBookmarks;
 let rawJson = data.bookmarksText || "[]\n";
 let bookmarks = parseBookmarks(rawJson) ?? [];
 let notice = null;
+const expandedBookmarks = new WeakSet();
 
 function parseBookmarks(text) {
 	try {
@@ -115,6 +116,50 @@ function deleteBookmark(items, index) {
 	renderApp();
 }
 
+function bookmarkContains(bookmark, target) {
+	return bookmark === target || (Array.isArray(bookmark.items) && bookmark.items.some((item) => bookmarkContains(item, target)));
+}
+
+function moveTargetsFor(bookmark, sourceItems) {
+	const targets = sourceItems === bookmarks ? [] : [{
+		items: bookmarks,
+		label: "Top Level",
+	}];
+
+	function visit(items, prefix = []) {
+		items.forEach((item) => {
+			if (bookmarkContains(bookmark, item)) return;
+			if (bookmarkType(item) !== "group") return;
+			if (item.items !== sourceItems) {
+				targets.push({
+					items: item.items ||= [],
+					label: [...prefix, item.title || "Untitled Group"].join(" / "),
+				});
+			}
+			visit(item.items ||= [], [...prefix, item.title || "Untitled Group"]);
+		});
+	}
+
+	visit(bookmarks);
+	return targets;
+}
+
+function moveBookmarkTo(sourceItems, index, targetItems) {
+	if (!targetItems || targetItems === sourceItems) return;
+	targetItems.push(sourceItems.splice(index, 1)[0]);
+	syncJson();
+	renderApp();
+}
+
+function toggleExpanded(bookmark) {
+	if (expandedBookmarks.has(bookmark)) {
+		expandedBookmarks.delete(bookmark);
+	} else {
+		expandedBookmarks.add(bookmark);
+	}
+	renderApp();
+}
+
 async function saveBookmarks(event) {
 	event.preventDefault();
 	if (!event.currentTarget.reportValidity()) return;
@@ -200,33 +245,60 @@ function updateCwd(bookmark, value) {
 
 function bookmarkCard(items, bookmark, index, depth) {
 	const type = bookmarkType(bookmark);
+	const moveTargets = moveTargetsFor(bookmark, items);
+	const expanded = expandedBookmarks.has(bookmark);
 	return html`
-		<section class="bookmark-card" data-depth=${Math.min(depth, 1)}>
-			<div class="bookmark-heading">
-				<label>
-					Title
-					<input
-						.value=${bookmark.title || ""}
-						?disabled=${type === "separator"}
-						@input=${(event) => updateBookmark(bookmark, {title: event.currentTarget.value})}
-					>
-				</label>
-				<label>
-					Type
-					<select .value=${type} @change=${(event) => changeBookmarkType(items, index, event.currentTarget.value)}>
-						<option value="command">command</option>
-						<option value="group">group</option>
-						<option value="separator">separator</option>
-					</select>
-				</label>
-			</div>
-			${bookmarkFields(bookmark)}
-			<div class="item-actions">
-				<button type="button" ?disabled=${index === 0} @click=${() => moveBookmark(items, index, -1)}>Up</button>
-				<button type="button" ?disabled=${index === items.length - 1} @click=${() => moveBookmark(items, index, 1)}>Down</button>
-				<button type="button" @click=${() => deleteBookmark(items, index)}>Delete</button>
-			</div>
-		</section>
+		<div class="bookmark-row" data-depth=${Math.min(depth, 1)}>
+			<section class="bookmark-card">
+				<div class="bookmark-summary">
+					<button type="button" class="bookmark-title-button" aria-expanded=${expanded} @click=${() => toggleExpanded(bookmark)}>
+						<span class="disclosure-icon">${expanded ? "▾" : "▸"}</span>
+						<span class="bookmark-title">${type === "separator" ? "Menu separator" : bookmark.title || "Untitled Bookmark"}</span>
+						<span class="bookmark-type">${type}</span>
+					</button>
+					<div class="bookmark-actions">
+						<button class="icon-button" type="button" title="Move up" aria-label="Move up" ?disabled=${index === 0} @click=${() => moveBookmark(items, index, -1)}>↑</button>
+						<button class="icon-button" type="button" title="Move down" aria-label="Move down" ?disabled=${index === items.length - 1} @click=${() => moveBookmark(items, index, 1)}>↓</button>
+						${moveTargets.length > 0 ? html`
+							<select class="move-select" aria-label="Move To" @change=${(event) => {
+								const value = event.currentTarget.value;
+								event.currentTarget.value = "";
+								if (!value) return;
+								const target = moveTargets[Number(value)];
+								moveBookmarkTo(items, index, target?.items);
+							}}>
+								<option value="">Move...</option>
+								${moveTargets.map((target, targetIndex) => html`<option value=${targetIndex}>${target.label}</option>`)}
+							</select>
+						` : ""}
+						<button class="icon-button" type="button" title="Delete" aria-label="Delete" @click=${() => deleteBookmark(items, index)}>×</button>
+					</div>
+				</div>
+				${expanded ? html`
+					<div class="bookmark-body">
+						<div class="bookmark-heading">
+							<label>
+								Title
+								<input
+									.value=${bookmark.title || ""}
+									?disabled=${type === "separator"}
+									@input=${(event) => updateBookmark(bookmark, {title: event.currentTarget.value})}
+								>
+							</label>
+							<label>
+								Type
+								<select .value=${type} @change=${(event) => changeBookmarkType(items, index, event.currentTarget.value)}>
+									<option value="command">command</option>
+									<option value="group">group</option>
+									<option value="separator">separator</option>
+								</select>
+							</label>
+						</div>
+						${bookmarkFields(bookmark)}
+					</div>
+				` : ""}
+			</section>
+		</div>
 	`;
 }
 
@@ -238,7 +310,7 @@ function renderApp() {
 	render(html`
 		<header>
 			<h1>Bookmarks</h1>
-			<p>Edit <code>${data.bookmarksPath}</code>. Use Bookmarks &gt; Refresh after saving.</p>
+			<p>Edit <code>${data.bookmarksPath}</code>.</p>
 		</header>
 		${notice ? html`<section class="notice" data-kind=${notice.kind}>${notice.text}</section>` : ""}
 		<form id="bookmarks-form" @submit=${saveBookmarks}>

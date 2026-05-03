@@ -111,8 +111,8 @@
 			<p>Bookmarks are menu entries defined in <code>bookmarks.json</code> next to your Chimera configuration file. Entries can launch commands, create separators, and group related commands into submenus.</p>
 
 			<h2>Location</h2>
-			<p>If your configuration file is <code>~/.local/state/chimera.json</code>, bookmarks are loaded from:</p>
-			<pre><code>~/.local/state/bookmarks.json</code></pre>
+			<p>If your configuration file is <code>~/.local/state/chimera/configuration.json</code>, bookmarks are loaded from:</p>
+			<pre><code>~/.local/state/chimera/bookmarks.json</code></pre>
 
 			<h2>Example</h2>
 			<p>Create <code>bookmarks.json</code> with entries like this:</p>
@@ -149,7 +149,7 @@
 				<li>Use <code>items</code> to create a submenu.</li>
 				<li><code>args</code> defaults to an empty array.</li>
 				<li>Relative <code>cwd</code> values are resolved next to the Chimera configuration file.</li>
-				<li>Use Bookmarks > Refresh after editing <code>bookmarks.json</code>.</li>
+				<li>The bundled editor refreshes the Bookmarks menu after saving.</li>
 			</ul>
 
 			<p class="muted">Bookmarks run as terminal sessions, so they can launch SSH, local commands, or small project workflows.</p>
