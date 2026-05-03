@@ -1,17 +1,23 @@
 # Releases
 
+## Unreleased
+
+  - Upgrade to `@socketry/htty` v0.4.0 and stream forwarded session requests without buffering subresources.
+  - Show updates in a dedicated window with download progress and a restart button, with configurable automatic update checks.
+  - Add an interactive configuration editor with live reload after saving.
+  - Improve editor save buttons and feedback for bookmarks and configuration.
+  - Keep tab focus near the closed tab by selecting the next tab to the right, then the previous tab.
+  - Add trailing ellipses to menu commands that open another flow.
+
 ## v0.3.0
 
   - Add WebGL-accelerated terminal rendering with fallback to the default renderer.
   - Add a Bookmarks menu populated from `bookmarks.json` next to the Chimera configuration file.
   - Add an interactive Edit Bookmarks command for editing `bookmarks.json`.
-  - Add an interactive Edit Configuration command for editing `configuration.json`.
-  - Reload configuration after saving from the editor.
   - Move the default application state into `~/.local/state/chimera/`, with configuration in `configuration.json` and bookmarks in `bookmarks.json`.
   - Standardize built-in interactive HTTY tools on Lit with shared support helpers.
   - Refresh the Bookmarks menu from the bookmarks editor using `POST /.well-known/chimera/bookmarks/refresh`.
   - Add bundled help for creating bookmarks.
-  - Show update download progress and make update checks configurable.
   - Keep HTTY bootstrap handling inside the terminal pane.
   - Mirror test file paths after their source modules.
   - Prepare releases automatically when running `npm version`.
