@@ -65,7 +65,7 @@ test("ends the readable side when the remote transport ends", async () => {
 	const ended = new Promise((resolve) => duplex.once("end", resolve));
 
 	duplex.resume();
-	duplex.endRemote();
+	duplex.closeRemote();
 	await ended;
 });
 
@@ -98,7 +98,7 @@ test("tracks session state transitions around HTTY startup", () => {
 	assert.deepEqual(states.filter((state) => state !== SESSION_STATUS.ATTACHED), [SESSION_STATUS.NEGOTIATING, SESSION_STATUS.CLOSING]);
 });
 
-test("terminal session interrupt writes HTTY GOAWAY while active", () => {
+test("terminal session interrupt writes HTTY GOAWAY frame while active", () => {
 	const writes = [];
 	let onData = null;
 	const process = {

@@ -3,6 +3,7 @@
 ## Unreleased
 
   - Fix size of update window.
+  - Fix handling of HTTY commmands during shutdown.
 
 ## v0.4.2
 
