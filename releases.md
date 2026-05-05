@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.4.3
 
   - Fix size of update window.
   - Fix handling of HTTY commmands during shutdown.
