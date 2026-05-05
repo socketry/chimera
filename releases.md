@@ -4,6 +4,7 @@
 
   - Fix size of update window.
   - Fix handling of HTTY commmands during shutdown.
+  - Add internal `htty-server-host` command for testing.
 
 ## v0.4.2
 

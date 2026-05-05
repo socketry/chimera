@@ -1,0 +1,318 @@
+#!/usr/bin/env node
+
+import pty from "node-pty";
+import {SESSION_STATUS} from "@socketry/htty";
+import {Session} from "@socketry/htty/Session";
+
+const DEFAULT_TIMEOUT_MS = 10000;
+const DEFAULT_PATH = "/";
+const MAX_OUTPUT_CAPTURE = 8192;
+
+function usage() {
+	console.error("Usage: htty-server-host [--request-path <path>] [--header <name:value>] [--timeout <ms>] [--print-headers] -- <command> [args...]");
+	console.error("");
+	console.error("Examples:");
+	console.error("  htty-server-host -- ./bin/htty-media-player sample.mp4");
+	console.error("  htty-server-host --request-path / --timeout 15000 -- ruby my_server.rb");
+	console.error("  htty-server-host --request-path /media --header range:bytes=0-0 -- ./bin/htty-media-player sample.mp3");
+	console.error("  htty-server-host --print-headers -- ./bin/htty-media-player sample.mp3");
+}
+
+function parseArgs(argv) {
+	let path = DEFAULT_PATH;
+	let timeoutMs = DEFAULT_TIMEOUT_MS;
+	let printHeaders = false;
+	const requestHeaders = {};
+	const commandParts = [];
+
+	for (let index = 0; index < argv.length; index += 1) {
+		const value = argv[index];
+
+		if (value === "--") {
+			commandParts.push(...argv.slice(index + 1));
+			break;
+		}
+
+		if (value === "--path" || value === "--request-path") {
+			path = argv[index + 1] || DEFAULT_PATH;
+			index += 1;
+			continue;
+		}
+
+		if (value === "--header") {
+			const header = argv[index + 1] || "";
+			const separator = header.indexOf(":");
+			if (separator <= 0) {
+				throw new Error(`Invalid header format: ${header}. Expected name:value`);
+			}
+
+			const name = header.slice(0, separator).trim().toLowerCase();
+			const headerValue = header.slice(separator + 1).trim();
+			if (!name) {
+				throw new Error(`Invalid header name in: ${header}`);
+			}
+
+			requestHeaders[name] = headerValue;
+			index += 1;
+			continue;
+		}
+
+		if (value === "--timeout") {
+			timeoutMs = Number(argv[index + 1]);
+			index += 1;
+			continue;
+		}
+
+		if (value === "--print-headers") {
+			printHeaders = true;
+			continue;
+		}
+
+		if (value === "-h" || value === "--help") {
+			return {help: true};
+		}
+
+		commandParts.push(...argv.slice(index));
+		break;
+	}
+
+	if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+		throw new Error(`Invalid timeout: ${timeoutMs}`);
+	}
+
+	if (commandParts.length === 0) {
+		throw new Error("No command provided.");
+	}
+
+	const [command, ...args] = commandParts;
+	return {command, args, path, timeoutMs, printHeaders, requestHeaders, help: false};
+}
+
+function withTimeout(promise, timeoutMs, label) {
+	let timer = null;
+	const timeout = new Promise((_, reject) => {
+		timer = setTimeout(() => {
+			reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+		}, timeoutMs);
+	});
+
+	return Promise.race([promise, timeout]).finally(() => {
+		if (timer) {
+			clearTimeout(timer);
+		}
+	});
+}
+
+function waitForEvent(emitter, eventName, timeoutMs, filter = null) {
+	return withTimeout(new Promise((resolve) => {
+		const handler = (...args) => {
+			if (filter && !filter(...args)) {
+				return;
+			}
+			emitter.off(eventName, handler);
+			resolve(args);
+		};
+		emitter.on(eventName, handler);
+	}), timeoutMs, `Waiting for ${eventName}`);
+}
+
+function waitForStreamCompletion(stream, timeoutMs) {
+	return withTimeout(new Promise((resolve, reject) => {
+		let settled = false;
+
+		const finish = (error = null) => {
+			if (settled) {
+				return;
+			}
+
+			settled = true;
+			stream.off?.("data", onData);
+			stream.off?.("end", onEnd);
+			stream.off?.("close", onClose);
+			stream.off?.("error", onError);
+
+			if (error) {
+				reject(error);
+			} else {
+				resolve();
+			}
+		};
+
+		const onData = () => {
+			// Drain and discard; protocol validation only needs successful framing.
+		};
+
+		const onEnd = () => finish();
+		const onClose = () => finish();
+		const onError = (error) => finish(error);
+
+		stream.on?.("data", onData);
+		stream.once?.("end", onEnd);
+		stream.once?.("close", onClose);
+		stream.once?.("error", onError);
+		stream.resume?.();
+	}), timeoutMs, "Response stream completion");
+}
+
+function trimCapturedOutput(text) {
+	if (!text) {
+		return "";
+	}
+
+	if (text.length <= MAX_OUTPUT_CAPTURE) {
+		return text;
+	}
+
+	return text.slice(text.length - MAX_OUTPUT_CAPTURE);
+}
+
+async function main() {
+	const options = parseArgs(process.argv.slice(2));
+	if (options.help) {
+		usage();
+		return;
+	}
+
+	const child = pty.spawn(options.command, options.args, {
+		name: "xterm-256color",
+		cols: 120,
+		rows: 40,
+		cwd: process.cwd(),
+		encoding: null,
+		env: {
+			...process.env,
+			HTTY: "1",
+		},
+	});
+
+	let capturedOutput = "";
+	const processHandle = {
+		onData(callback) {
+			return child.onData(callback);
+		},
+		onExit(callback) {
+			return child.onExit(callback);
+		},
+		write(data) {
+			try {
+				child.write(data);
+				return true;
+			} catch (error) {
+				if (error?.code === "EIO") {
+					return false;
+				}
+
+				throw error;
+			}
+		},
+		resize(cols, rows) {
+			child.resize(cols, rows);
+		},
+		kill() {
+			child.kill();
+		},
+	};
+
+	const session = new Session(processHandle, {
+		id: "htty-server-host",
+		command: options.command,
+		args: options.args,
+		cwd: process.cwd(),
+		title: "htty-server-host",
+		defaultTitle: "htty-server-host",
+		usePty: true,
+		showTerminalTab: false,
+	});
+
+	session.on("terminal-data", (chunk) => {
+		capturedOutput += chunk;
+		capturedOutput = trimCapturedOutput(capturedOutput);
+	});
+
+	session.on("state", (state) => {
+		if (state.status === SESSION_STATUS.ERROR) {
+			console.error("[htty-server-host] session error", state);
+		}
+	});
+
+	let attached = false;
+	let status = null;
+
+	try {
+		await waitForEvent(
+			session,
+			"state",
+			options.timeoutMs,
+			(state) => state.status === SESSION_STATUS.ATTACHED && state.phase === "ready",
+		);
+		attached = true;
+
+		const client = session.client;
+		if (!client) {
+			throw new Error("HTTY session attached but client is unavailable.");
+		}
+
+		const response = await withTimeout(
+			client.request({path: options.path, method: "GET", headers: options.requestHeaders}),
+			options.timeoutMs,
+			"HTTY request",
+		);
+		status = response.status;
+
+		if (status < 200 || status >= 400) {
+			throw new Error(`HTTY request failed with status ${status}`);
+		}
+
+		if (options.printHeaders) {
+			console.log("[htty-server-host] response headers:");
+			for (const [name, value] of Object.entries(response.headers || {})) {
+				console.log(`  ${name}: ${value}`);
+			}
+		}
+
+		await waitForStreamCompletion(response.stream, options.timeoutMs);
+
+		console.log(`[htty-server-host] HTTY validated: status=${status} path=${options.path}`);
+
+		if (session.isHttyActive()) {
+			session.sendInterrupt();
+
+			try {
+				await withTimeout(Promise.race([
+					waitForEvent(session, "reset", options.timeoutMs),
+					waitForEvent(session, "exit", options.timeoutMs),
+				]), options.timeoutMs, "HTTY teardown");
+			} catch (error) {
+				console.error(`[htty-server-host] teardown warning: ${error.message}`);
+			}
+		}
+
+		process.exitCode = 0;
+	} catch (error) {
+		const snippet = trimCapturedOutput(capturedOutput);
+		if (snippet) {
+			console.error("[htty-server-host] terminal output (tail):");
+			console.error(snippet);
+		}
+
+		throw error;
+	} finally {
+		session.close();
+	}
+
+	if (!attached) {
+		throw new Error("HTTY did not attach.");
+	}
+
+	if (status == null) {
+		throw new Error("HTTY request did not complete.");
+	}
+}
+
+main().catch((error) => {
+	console.error(`[htty-server-host] FAIL: ${error.message}`);
+	if (error.stack) {
+		console.error(error.stack);
+	}
+	process.exit(1);
+});
