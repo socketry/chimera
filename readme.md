@@ -12,7 +12,7 @@ Chimera keeps the power of the TTY and pairs it with the modern web stack. A com
 Install the latest packaged build from GitHub Releases:
 
 - [Download macOS](https://github.com/socketry/chimera/releases/latest/download/Chimera-macOS-arm64.dmg)
-- [Download Linux](https://github.com/socketry/chimera/releases/latest/download/Chimera-Linux-x64.AppImage)
+- [Download Linux](https://github.com/socketry/chimera/releases/latest/download/Chimera-Linux-x86_64.AppImage)
 - [Download Windows](https://github.com/socketry/chimera/releases/latest/download/Chimera-Windows-x64.exe)
 - [All releases](https://github.com/socketry/chimera/releases/latest)
 
