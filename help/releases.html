@@ -115,9 +115,10 @@
 	<body>
 		<main>
 			<h1>Releases</h1>
-			<h2>Unreleased</h2>
+			<h2>v0.4.5</h2>
 			<ul>
 			<li>Set <code>LANG</code> environment variable for child processes using <code>app.getLocale()</code> when not already present in the environment, fixing missing locale on macOS where Electron apps launched via the app bundle do not inherit the shell environment.</li>
+			<li>Update <code>@socketry/htty</code> to which has better handling of null-body response statuses (101, 204, 205, 304).</li>
 			</ul>
 			<h2>v0.4.4</h2>
 			<ul>

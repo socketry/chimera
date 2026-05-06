@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.4.5
 
   - Set `LANG` environment variable for child processes using `app.getLocale()` when not already present in the environment, fixing missing locale on macOS where Electron apps launched via the app bundle do not inherit the shell environment.
   - Update `@socketry/htty` to which has better handling of null-body response statuses (101, 204, 205, 304).
