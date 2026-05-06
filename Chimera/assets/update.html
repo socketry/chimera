@@ -11,9 +11,36 @@
 				font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 			}
 
-			body {
+			html, body {
+				height: 100%;
 				margin: 0;
+			}
+
+			body {
+				display: flex;
+				flex-direction: column;
+				box-sizing: border-box;
 				padding: 24px;
+				gap: 0;
+			}
+
+			.top {
+				flex: 0 0 auto;
+			}
+
+			.middle {
+				flex: 1 1 auto;
+				display: flex;
+				flex-direction: column;
+				align-items: stretch;
+				justify-content: center;
+			}
+
+			.bottom {
+				flex: 0 0 auto;
+				display: flex;
+				justify-content: flex-end;
+				align-items: flex-end;
 			}
 
 			h1 {
@@ -23,7 +50,7 @@
 			}
 
 			p {
-				margin: 0 0 18px;
+				margin: 0;
 				color: color-mix(in srgb, CanvasText 72%, transparent);
 				font-size: 13px;
 			}
@@ -48,8 +75,6 @@
 			.actions {
 				display: flex;
 				gap: 8px;
-				justify-content: flex-end;
-				margin-top: 22px;
 			}
 
 			a {
@@ -75,14 +100,20 @@
 		</style>
 	</head>
 	<body>
-		<h1>Update Available</h1>
-		<p id="description">An update is available.</p>
-		<progress id="progress" max="100" value="0" hidden></progress>
-		<div id="status" class="status">Download the update now?</div>
-		<div class="actions">
-			<a id="later" class="secondary" href="chimera-update://later">Later</a>
-			<a id="download" href="chimera-update://download">Download Update</a>
-			<a id="restart" aria-disabled="true" hidden>Restart Now</a>
+		<div class="top">
+			<h1>Update Available</h1>
+			<p id="description">An update is available.</p>
+		</div>
+		<div class="middle">
+			<progress id="progress" max="100" value="0" hidden></progress>
+			<div id="status" class="status">Download the update now?</div>
+		</div>
+		<div class="bottom">
+			<div class="actions">
+				<a id="later" class="secondary" href="chimera-update://later">Later</a>
+				<a id="download" href="chimera-update://download">Download Update</a>
+				<a id="restart" aria-disabled="true" hidden>Restart Now</a>
+			</div>
 		</div>
 		<script type="module" src="./update.js"></script>
 	</body>

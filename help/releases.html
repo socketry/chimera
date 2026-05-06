@@ -115,6 +115,10 @@
 	<body>
 		<main>
 			<h1>Releases</h1>
+			<h2>Unreleased</h2>
+			<ul>
+			<li>Set <code>LANG</code> environment variable for child processes using <code>app.getLocale()</code> when not already present in the environment, fixing missing locale on macOS where Electron apps launched via the app bundle do not inherit the shell environment.</li>
+			</ul>
 			<h2>v0.4.4</h2>
 			<ul>
 			<li>Fix closing an HTTY surface returning to the terminal instead of closing the window. Previously, dismissing the last surface would tear down the session and close the window entirely; now the session transitions back to terminal mode naturally.</li>

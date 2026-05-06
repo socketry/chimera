@@ -69,6 +69,10 @@ export class SurfaceController {
 				}
 			}
 		});
+
+		if (process.env.HTTY_DEBUG === "1") {
+			this.view.webContents.openDevTools({mode: "detach"});
+		}
 	}
 
 	snapshot(isActive = false) {

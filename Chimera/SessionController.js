@@ -1,5 +1,6 @@
 import {spawn} from "node:child_process";
 import pty from "node-pty";
+import {app} from "electron";
 import {SESSION_STATUS} from "@socketry/htty";
 import {Session} from "@socketry/htty/Session";
 
@@ -176,8 +177,12 @@ export class SessionController {
 	}
 	
 	#childEnvironment() {
+		// Electron apps on macOS are launched via the app bundle and don't inherit the shell environment, so LANG is often absent. Fall back to constructing it from the system locale reported by Electron (BCP 47 → POSIX format).
+		const lang = process.env.LANG ?? (app.getLocale().replace("-", "_") + ".UTF-8");
+
 		return {
 			...process.env,
+			LANG: lang,
 			HTTY: "1",
 		};
 	}
