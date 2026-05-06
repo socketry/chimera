@@ -1,5 +1,10 @@
 # Releases
 
+## Unreleased
+
+  - Fix closing an HTTY surface returning to the terminal instead of closing the window. Previously, dismissing the last surface would tear down the session and close the window entirely; now the session transitions back to terminal mode naturally.
+  - Update `@socketry/htty` to v0.5.2 which fixes various HTTY protocol edge cases and adds better error handling for transport shutdown.
+
 ## v0.4.3
 
   - Fix size of update window.

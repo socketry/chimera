@@ -192,6 +192,7 @@ export class SessionController {
 		});
 
 		session.on("state", (state) => {
+			this.trace("sessionController:state", {sessionId: this.id, ...state});
 			this.delegate.sessionControllerDidUpdateState(this, state);
 			if (state.status === SESSION_STATUS.ATTACHED && state.phase === "ready") {
 				this.requestInitialSurface();
@@ -215,7 +216,9 @@ export class SessionController {
 		session.on("reset", () => {
 			this.trace("sessionController:reset-to-terminal-mode", {
 				sessionId: this.id,
+				isHttyActive: session.isHttyActive(),
 			});
+			this.delegate.sessionControllerDidReset?.(this);
 		});
 
 		session.on("attached", () => {
@@ -468,10 +471,22 @@ export class SessionController {
 	interruptAfterLastSurfaceClosed() {
 		this.closeSessionAfterExit = true;
 		this.closeSurfacesWhenProcessExits = false;
-		
+
+		this.trace("interruptAfterLastSurfaceClosed", {
+			sessionId: this.id,
+			hasExitInfo: Boolean(this.exitInfo),
+			hasSession: Boolean(this.session),
+			isHttyActive: this.session?.isHttyActive() ?? false,
+		});
+
 		if (this.exitInfo || !this.session) return false;
-		
-		return this.session.sendInterrupt();
+
+		const sent = this.session.sendInterrupt();
+		this.trace("interruptAfterLastSurfaceClosed:sent", {
+			sessionId: this.id,
+			sent,
+		});
+		return sent;
 	}
 
 	updateTitle(title) {

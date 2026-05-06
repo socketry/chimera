@@ -494,7 +494,13 @@ export class WindowController {
 		this.emitToRenderer("session:document", {sessionId: session.id, payload});
 	}
 
+	sessionControllerDidReset(session) {
+		this.trace("sessionControllerDidReset", {sessionId: session.id, surfaceCount: session.surfaces.size});
+		this.emitSessionUpdated(session);
+	}
+
 	sessionControllerDidExit(session, {exitCode, signal}) {
+		this.trace("sessionControllerDidExit", {sessionId: session.id, exitCode, signal, closeSessionAfterExit: session.closeSessionAfterExit, surfaceCount: session.surfaces.size});
 		this.emitToRenderer("session:exit", {sessionId: session.id, exitCode, signal});
 		if (session.closeSessionAfterExit && session.surfaces.size === 0) {
 			this.finalizeSessionRemoval(session.id);
@@ -525,6 +531,10 @@ export class WindowController {
 
 	sessionControllerDidCloseLastSurface(session) {
 		const interruptSent = session.interruptAfterLastSurfaceClosed();
+		this.trace("sessionControllerDidCloseLastSurface", {
+			sessionId: session.id,
+			interruptSent,
+		});
 		if (!interruptSent) {
 			this.finalizeSessionRemoval(session.id);
 		}
