@@ -46,6 +46,10 @@ jobs:
           chmod 600 "$key_path"
           echo "APPLE_API_KEY=$key_path" >> "$GITHUB_ENV"
 
+      - name: Install AppImage dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y libfuse2
+
       - name: Build and publish release artifacts
         run: npm run release
         env:
