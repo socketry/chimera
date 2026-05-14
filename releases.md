@@ -3,6 +3,7 @@
 ## Unreleased
 
   - Restore native macOS fullscreen behaviour for the green traffic light by explicitly setting `fullscreenable: true` and `simpleFullscreen: false` on `DarwinWindowController`.
+  - Add a `View → Auto-Inspect New Web Views` toggle that opens detached developer tools on every newly-created embedded surface and persists the choice in `configuration.json` under `debug.autoInspectSurfaces`.
 
 ## v0.4.5
 

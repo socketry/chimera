@@ -136,6 +136,11 @@ export class ChimeraApplication {
 		}));
 	}
 
+	setAutoInspectSurfaces(enabled) {
+		this.configuration.setDebugOption("autoInspectSurfaces", Boolean(enabled));
+		this.buildApplicationMenu();
+	}
+
 	async openBookmark(bookmark) {
 		const controller = this.focusedWindowController() ?? Array.from(this.windowControllers.values())[0] ?? await this.createWindow();
 		controller.window?.focus();

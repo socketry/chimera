@@ -93,6 +93,14 @@ export class MenuController {
 							this.application.focusedWindowController()?.showActiveSurfaceDeveloperTools();
 						},
 					},
+					{
+						label: "Auto-Inspect New Web Views",
+						type: "checkbox",
+						checked: Boolean(this.application.configuration.debugOptions().autoInspectSurfaces),
+						click: (menuItem) => {
+							this.application.setAutoInspectSurfaces(menuItem.checked);
+						},
+					},
 				],
 			},
 			{role: "windowMenu"},

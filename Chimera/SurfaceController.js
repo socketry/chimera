@@ -70,8 +70,8 @@ export class SurfaceController {
 			}
 		});
 
-		if (process.env.HTTY_DEBUG === "1") {
-			this.view.webContents.openDevTools({mode: "detach"});
+		if (this.sessionController.application.configuration.debugOptions().autoInspectSurfaces) {
+			this.showDeveloperTools();
 		}
 	}
 

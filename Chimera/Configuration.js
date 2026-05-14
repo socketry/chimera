@@ -26,6 +26,9 @@ const DEFAULT_CONFIGURATION = {
 		autoCheck: true,
 		recheckIntervalHours: 24,
 	},
+	debug: {
+		autoInspectSurfaces: false,
+	},
 	profiles: {
 		e2e: {
 			window: {
@@ -116,6 +119,25 @@ export class Configuration {
 
 	updateOptions() {
 		return mergeObjects(this.configuration.updates ?? {}, this.profileConfiguration().updates ?? {});
+	}
+
+	debugOptions() {
+		return mergeObjects(this.configuration.debug ?? {}, this.profileConfiguration().debug ?? {});
+	}
+
+	setDebugOption(key, value) {
+		const fileConfiguration = isObject(this.fileConfiguration) ? {...this.fileConfiguration} : {};
+		const debug = isObject(fileConfiguration.debug) ? {...fileConfiguration.debug} : {};
+		debug[key] = value;
+		fileConfiguration.debug = debug;
+		this.fileConfiguration = fileConfiguration;
+		this.configuration = mergeObjects(DEFAULT_CONFIGURATION, this.fileConfiguration);
+		this.persist();
+	}
+
+	persist() {
+		fs.mkdirSync(this.configurationDirectory(), {recursive: true});
+		fs.writeFileSync(this.configPath, `${JSON.stringify(this.fileConfiguration, null, "\t")}\n`);
 	}
 
 	configurationDirectory() {
