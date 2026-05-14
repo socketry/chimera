@@ -115,6 +115,7 @@
 	<body>
 		<main>
 			<h1>Releases</h1>
+<<<<<<< HEAD
 			<h2>v0.4.5</h2>
 			<ul>
 			<li>Set <code>LANG</code> environment variable for child processes using <code>app.getLocale()</code> when not already present in the environment, fixing missing locale on macOS where Electron apps launched via the app bundle do not inherit the shell environment.</li>
@@ -130,6 +131,11 @@
 			<li>Fix size of update window.</li>
 			<li>Fix handling of HTTY commmands during shutdown.</li>
 			<li>Add internal <code>htty-server-host</code> command for testing.</li>
+=======
+			<h2>Unreleased</h2>
+			<ul>
+			<li>Restore native macOS fullscreen behaviour for the green traffic light by explicitly setting <code>fullscreenable: true</code> and <code>simpleFullscreen: false</code> on <code>DarwinWindowController</code>.</li>
+>>>>>>> 673be67 (Restore native macOS fullscreen on the green traffic light.)
 			</ul>
 			<h2>v0.4.2</h2>
 			<ul>

@@ -7,6 +7,8 @@ export class DarwinWindowController extends WindowController {
 			titleBarOverlay: {height: 30},
 			trafficLightPosition: {x: 12, y: 8},
 			autoHideMenuBar: false,
+			fullscreenable: true,
+			simpleFullscreen: false,
 		};
 	}
 }

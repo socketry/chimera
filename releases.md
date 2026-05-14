@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Restore native macOS fullscreen behaviour for the green traffic light by explicitly setting `fullscreenable: true` and `simpleFullscreen: false` on `DarwinWindowController`.
+
 ## v0.4.5
 
   - Set `LANG` environment variable for child processes using `app.getLocale()` when not already present in the environment, fixing missing locale on macOS where Electron apps launched via the app bundle do not inherit the shell environment.
