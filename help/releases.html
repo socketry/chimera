@@ -119,6 +119,7 @@
 			<ul>
 			<li>Restore native macOS fullscreen behaviour for the green traffic light by explicitly setting <code>fullscreenable: true</code> and <code>simpleFullscreen: false</code> on <code>DarwinWindowController</code>.</li>
 			<li>Add a <code>View → Auto-Inspect New Web Views</code> toggle that opens detached developer tools on every newly-created embedded surface and persists the choice in <code>configuration.json</code> under <code>debug.autoInspectSurfaces</code>.</li>
+			<li>Promote <code>lit-html</code>, <code>lit-element</code>, and <code>@lit/reactive-element</code> to direct dependencies so they appear at the top of <code>node_modules/</code> under pnpm; this fixes 404s for <code>is-server.js</code> (and other Lit subpaths) loaded by embedded surface tools.</li>
 			</ul>
 			<h2>v0.4.5</h2>
 			<ul>

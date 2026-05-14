@@ -4,6 +4,7 @@
 
   - Restore native macOS fullscreen behaviour for the green traffic light by explicitly setting `fullscreenable: true` and `simpleFullscreen: false` on `DarwinWindowController`.
   - Add a `View → Auto-Inspect New Web Views` toggle that opens detached developer tools on every newly-created embedded surface and persists the choice in `configuration.json` under `debug.autoInspectSurfaces`.
+  - Promote `lit-html`, `lit-element`, and `@lit/reactive-element` to direct dependencies so they appear at the top of `node_modules/` under pnpm; this fixes 404s for `is-server.js` (and other Lit subpaths) loaded by embedded surface tools.
 
 ## v0.4.5
 
