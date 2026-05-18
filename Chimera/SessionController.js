@@ -106,6 +106,14 @@ export class SessionController {
 
 		this.#attachSessionListeners();
 
+		// Register this session with the shared surface server so Chromium can
+		// reach it via HTTP and WebSocket at http://session-N.htty/.
+		this.application.surfaceServer.register(
+			this.id,
+			() => this.client,
+			(path, req, res) => this.#handleWellKnown(path, req, res),
+		);
+
 		this.trace("createSession:done", {sessionId: this.id});
 	}
 
@@ -442,7 +450,23 @@ export class SessionController {
 		this.delegate.sessionControllerDidRequestConfigurationRefresh?.(this, surface);
 	}
 
-	surfaceControllerDidChange(surface) {
+	// Handle Chimera-internal .well-known/chimera/ routes served by the Unix
+	// socket server. Returns true if the route was handled.
+	#handleWellKnown(routePath, _req, res) {
+		if (routePath === "/.well-known/chimera/bookmarks/refresh") {
+			this.delegate.sessionControllerDidRequestBookmarksRefresh?.(this, null);
+			res.writeHead(204);
+			res.end();
+			return true;
+		}
+		if (routePath === "/.well-known/chimera/configuration/refresh") {
+			this.delegate.sessionControllerDidRequestConfigurationRefresh?.(this, null);
+			res.writeHead(204);
+			res.end();
+			return true;
+		}
+		return false;
+	}	surfaceControllerDidChange(surface) {
 		this.delegate.sessionControllerDidUpdateSurface(this, surface);
 	}
 
@@ -510,5 +534,7 @@ export class SessionController {
 
 		this.browserDocumentRequests.clear();
 		this.session?.close();
+
+		this.application.surfaceServer.unregister(this.id);
 	}
 }

@@ -35,14 +35,20 @@ export function normalizeRequestPath(value = "/") {
 	return `/${text}`;
 }
 
+export const SURFACE_HOST_SUFFIX = ".htty";
+
 export function toSurfaceURL(sessionId, requestPath = "/") {
-	return `htty://${sessionId}${normalizeRequestPath(requestPath)}`;
+	return `http://${sessionId}${SURFACE_HOST_SUFFIX}${normalizeRequestPath(requestPath)}`;
 }
 
 export function parseSurfaceURL(urlString) {
 	const url = new URL(urlString);
+	const host = url.host;
+	const sessionId = host.endsWith(SURFACE_HOST_SUFFIX)
+		? host.slice(0, -SURFACE_HOST_SUFFIX.length)
+		: host;
 	return {
-		sessionId: url.host,
+		sessionId,
 		requestPath: normalizeRequestPath(`${url.pathname || "/"}${url.search}`),
 	};
 }

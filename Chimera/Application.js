@@ -1,4 +1,4 @@
-import {app, BrowserWindow, dialog, ipcMain, protocol} from "electron";
+import {app, BrowserWindow, dialog, ipcMain} from "electron";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 
@@ -8,6 +8,7 @@ import {DarwinWindowController} from "./DarwinWindowController.js";
 import {LinuxWindowController} from "./LinuxWindowController.js";
 import {MenuController} from "./MenuController.js";
 import {RendererCommandDispatcher} from "./RendererCommandDispatcher.js";
+import {HTTYSurfaceServer} from "./HTTYSurfaceServer.js";
 import {trace} from "./Utilities.js";
 import {UpdateController} from "./UpdateController.js";
 import {WindowController} from "./WindowController.js";
@@ -37,7 +38,8 @@ export class ChimeraApplication {
 			options: this.configuration.updateOptions(),
 			trace: this.trace.bind(this),
 		});
-		
+		this.surfaceServer = new HTTYSurfaceServer();
+
 		if (this.environment.CHIMERA_E2E === "1") {
 			globalThis.chimeraE2E = {
 				evaluateSurface: (surfaceId, script) => this.evaluateSurfaceForTesting(surfaceId, script),
@@ -57,20 +59,6 @@ export class ChimeraApplication {
 	nextSurfaceId() {
 		this.surfaceCounter += 1;
 		return `surface-${this.surfaceCounter}`;
-	}
-
-	registerPrivilegedSchemes() {
-		protocol.registerSchemesAsPrivileged([
-			{
-				scheme: "htty",
-				privileges: {
-					standard: true,
-					secure: true,
-					supportFetchAPI: true,
-					corsEnabled: true,
-				},
-			},
-		]);
 	}
 
 	windowControllerClass() {
@@ -249,7 +237,11 @@ export class ChimeraApplication {
 	}
 
 	async start() {
-		this.registerPrivilegedSchemes();
+		// Start the TCP bridge before Electron is ready so we can set the
+		// host-resolver-rules switch that Chromium reads at startup.
+		const port = await this.surfaceServer.start();
+		app.commandLine.appendSwitch("host-resolver-rules", `MAP *${".htty"} 127.0.0.1:${port}`);
+
 		await app.whenReady();
 		this.registerIpcHandlers();
 		await this.createWindow();

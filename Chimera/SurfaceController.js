@@ -1,16 +1,6 @@
 import {WebContentsView} from "electron";
 
 import {normalizeRequestPath, parseSurfaceURL, toSurfaceURL} from "./Utilities.js";
-import {WellKnownController} from "./WellKnownController.js";
-
-function surfaceErrorResponse(status, message) {
-	return new Response(message, {
-		status,
-		headers: {
-			"content-type": "text/plain; charset=utf-8",
-		},
-	});
-}
 
 export class SurfaceController {
 	static async create(delegate, options) {
@@ -31,7 +21,6 @@ export class SurfaceController {
 		this.focused = false;
 		this.bounds = null;
 		this.view = null;
-		this.wellKnownController = new WellKnownController(this);
 	}
 
 	async initialize() {
@@ -50,7 +39,6 @@ export class SurfaceController {
 
 		this.view.setVisible(false);
 		this.view.webContents.setWindowOpenHandler(() => ({action: "deny"}));
-		await this.view.webContents.session.protocol.handle("htty", (request) => this.handleSurfaceRequest(request));
 		this.view.webContents.on("did-navigate", (_event, url) => {
 			const {sessionId, requestPath} = parseSurfaceURL(url);
 			if (sessionId === this.sessionId) {
@@ -83,39 +71,6 @@ export class SurfaceController {
 			title: this.title,
 			isActive,
 		};
-	}
-
-	async handleSurfaceRequest(request) {
-		// Electron delivers every embedded WebContentsView request for the htty:// protocol here. The URL host selects the owning Chimera session; the path is either a Chimera-owned .well-known route or an application request forwarded over the session's HTTY client. SessionController handles the application response shape, including document navigation bookkeeping and subresource pass-through, then returns a Fetch Response for Electron to load in the isolated web view.
-		const {sessionId, requestPath} = parseSurfaceURL(request.url);
-		if (sessionId !== this.sessionId) {
-			return surfaceErrorResponse(403, "Cross-session HTTY navigation is not supported.");
-		}
-
-		if (!this.sessionController.client) {
-			return surfaceErrorResponse(410, "HTTY session is no longer available.");
-		}
-
-		try {
-			// Chimera-owned .well-known routes are handled by the host before the request reaches the HTTY application.
-			const wellKnownResponse = this.wellKnownController.handleRequest({
-				path: requestPath,
-				request,
-			});
-			if (wellKnownResponse) {
-				return wellKnownResponse;
-			}
-
-			// All other requests are application traffic and are forwarded through the session's HTTY client.
-			return await this.sessionController.handleRequest({
-				surface: this,
-				path: requestPath,
-				request,
-			});
-		} catch (error) {
-			this.sessionController.handleSurfaceRequestError(error);
-			return surfaceErrorResponse(500, error.message);
-		}
 	}
 
 	async load(requestPath = this.requestPath) {
@@ -159,14 +114,6 @@ export class SurfaceController {
 
 		this.view.webContents.openDevTools({mode: "detach"});
 		return true;
-	}
-
-	wellKnownControllerDidRequestBookmarksRefresh() {
-		this.delegate.surfaceControllerDidRequestBookmarksRefresh?.(this);
-	}
-
-	wellKnownControllerDidRequestConfigurationRefresh() {
-		this.delegate.surfaceControllerDidRequestConfigurationRefresh?.(this);
 	}
 
 	close() {
