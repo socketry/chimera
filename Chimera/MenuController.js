@@ -10,6 +10,41 @@ export class MenuController {
 		const bookmarkMenuItems = this.bookmarkMenuItems(bookmarks);
 		const template = [
 			this.applicationMenu(),
+			{role: "editMenu"},
+			{
+				label: "View",
+				submenu: [
+					{
+						label: "Toggle Tab Bar",
+						accelerator: "CmdOrCtrl+Shift+F",
+						click: () => {
+							this.application.focusedWindowController()?.toggleTabBar();
+						},
+					},
+					{type: "separator"},
+					{role: "resetZoom"},
+					{role: "zoomIn"},
+					{role: "zoomOut"},
+					{type: "separator"},
+					{role: "reload"},
+					{role: "forceReload"},
+					{role: "toggleDevTools"},
+					{
+						label: "Inspect Active Web View",
+						click: () => {
+							this.application.focusedWindowController()?.showActiveSurfaceDeveloperTools();
+						},
+					},
+					{
+						label: "Auto-Inspect New Web Views",
+						type: "checkbox",
+						checked: Boolean(this.application.configuration.debugOptions().autoInspectSurfaces),
+						click: (menuItem) => {
+							this.application.setAutoInspectSurfaces(menuItem.checked);
+						},
+					},
+				],
+			},
 			{
 				label: "Session",
 				submenu: [
@@ -64,41 +99,6 @@ export class MenuController {
 						label: "Edit Bookmarks...",
 						click: () => {
 							void this.application.editBookmarks();
-						},
-					},
-				],
-			},
-			{role: "editMenu"},
-			{
-				label: "View",
-				submenu: [
-					{
-						label: "Toggle Tab Bar",
-						accelerator: "CmdOrCtrl+Shift+F",
-						click: () => {
-							this.application.focusedWindowController()?.toggleTabBar();
-						},
-					},
-					{type: "separator"},
-					{role: "resetZoom"},
-					{role: "zoomIn"},
-					{role: "zoomOut"},
-					{type: "separator"},
-					{role: "reload"},
-					{role: "forceReload"},
-					{role: "toggleDevTools"},
-					{
-						label: "Inspect Active Web View",
-						click: () => {
-							this.application.focusedWindowController()?.showActiveSurfaceDeveloperTools();
-						},
-					},
-					{
-						label: "Auto-Inspect New Web Views",
-						type: "checkbox",
-						checked: Boolean(this.application.configuration.debugOptions().autoInspectSurfaces),
-						click: (menuItem) => {
-							this.application.setAutoInspectSurfaces(menuItem.checked);
 						},
 					},
 				],
